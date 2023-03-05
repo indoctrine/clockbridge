@@ -1,0 +1,3 @@
+[submodule "clockifysdk"]
+	path = clockifysdk
+	url = https://gitlab.home.bsdgirl.net/Meta/clockifysdk.git
