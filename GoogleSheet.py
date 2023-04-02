@@ -1,11 +1,7 @@
 import sys
 import os
-from google.auth.transport.requests import Request
-#from google.oauth2.credentials import Credentials
 from google.oauth2 import service_account
-from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
 
 class GoogleSheet:
     def __init__(self, scope: list, id: str):
