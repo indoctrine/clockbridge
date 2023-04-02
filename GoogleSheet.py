@@ -4,16 +4,14 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
 class GoogleSheet:
-    def __init__(self, scope: list, id: str):
-        self.scopes = scope
+    def __init__(self, id: str):
         self.spreadsheetId = id
         self.creds = None
 
-    def authenticate(self, credsPath: str):
+    def authenticate(self, credsPath: str, scopes: list):
         try:
-            self.credsPath = credsPath
-            if os.path.exists(self.credsPath):
-                self.creds = service_account.Credentials.from_service_account_file(self.credsPath, scopes=self.scopes)
+            if os.path.exists(credsPath):
+                self.creds = service_account.Credentials.from_service_account_file(credsPath, scopes=scopes)
             return True
         except Exception as e:
             print(e, file=sys.stderr)
