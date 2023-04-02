@@ -37,9 +37,8 @@ def webhook_receive():
             dayOfYear = endDate.timetuple().tm_yday # Get day of the year
             
             sheetCellRange = f'{endDate.year}!B{dayOfYear+1}' # Allow for header row
-            sheet = GoogleSheet(scope=['https://www.googleapis.com/auth/spreadsheets'], 
-                                id='1F0l7fuqEO8jvGXu0yaaq7jvrGgqubYS3iCwjgXSkuiY')
-            sheet.authenticate(credsPath='credentials.json')
+            sheet = GoogleSheet(id='1F0l7fuqEO8jvGXu0yaaq7jvrGgqubYS3iCwjgXSkuiY')
+            sheet.authenticate(credsPath='credentials.json', scopes=['https://www.googleapis.com/auth/spreadsheets'])
             sheet.build_service()
             sheetValues = sheet.get_sheet_values(cellRange=sheetCellRange)
 
