@@ -1,34 +1,23 @@
 import sys
 import os
 from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
+#from google.oauth2.credentials import Credentials
+from google.oauth2 import service_account
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 class GoogleSheet:
-    def __init__(self, scope: list, id: str, credsPath: str='credentials.json'):
-        # If modifying scopes, delete the file at tokenPath
+    def __init__(self, scope: list, id: str):
         self.scopes = scope
         self.spreadsheetId = id
         self.creds = None
-        self.credsPath = credsPath
 
-    def authenticate(self, tokenPath: str):
+    def authenticate(self, credsPath: str):
         try:
-            self.tokenPath = tokenPath
-            if os.path.exists(self.tokenPath):
-                self.creds = Credentials.from_authorized_user_file(self.tokenPath, self.scopes)
-            if not self.creds or not self.creds.valid:
-                if self.creds and self.creds.expired and self.creds.refresh_token:
-                    self.creds.refresh(Request())
-                else:
-                    self.flow = InstalledAppFlow.from_client_secrets_file(
-                        'credentials.json', self.scopes)
-                    self.creds = self.flow.run_local_server(port=0)
-                # Save the credentials for the next run
-                with open(self.tokenPath, 'w') as token:
-                    token.write(self.creds.to_json())
+            self.credsPath = credsPath
+            if os.path.exists(self.credsPath):
+                self.creds = service_account.Credentials.from_service_account_file(self.credsPath, scopes=self.scopes)
             return True
         except Exception as e:
             print(e, file=sys.stderr)

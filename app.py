@@ -19,18 +19,14 @@ def create_app():
 
 flaskApp = create_app()
 
-@flaskApp.route("/")
-def root():
-    return "Hello World"
-
-@flaskApp.route("/webhook", methods = ['POST'])
+@flaskApp.route("/webhook/clockify", methods = ['POST'])
 def webhook_receive():
-    # Token is sent in Clockify-Signature header - can use this to verify requests and lockdown my endpoint
     with open('webhook-secrets.json', 'r') as fp:
         secrets = json.load(fp)
         tokens = secrets['secrets']
     token = request.headers.get('Clockify-Signature')
     
+    # Verify legitimate webhook traffic
     if token in tokens:
         payload = json.loads(request.data)
 
@@ -38,21 +34,26 @@ def webhook_receive():
             startDate = datetime.strptime(payload['timeInterval']['start'], "%Y-%m-%dT%H:%M:%SZ")
             endDate = datetime.strptime(payload['timeInterval']['end'], "%Y-%m-%dT%H:%M:%SZ")
             clockifyDuration = calc_timedelta(startDate, endDate)
-
             dayOfYear = endDate.timetuple().tm_yday # Get day of the year
-            hookDateRange = f'{endDate.year}!B{dayOfYear+1}' # Allow for header row
+            
+            sheetCellRange = f'{endDate.year}!B{dayOfYear+1}' # Allow for header row
             sheet = GoogleSheet(scope=['https://www.googleapis.com/auth/spreadsheets'], 
                                 id='1F0l7fuqEO8jvGXu0yaaq7jvrGgqubYS3iCwjgXSkuiY')
-            sheet.authenticate(tokenPath='token.json')
+            sheet.authenticate(credsPath='credentials.json')
             sheet.build_service()
-            sheetValues = sheet.get_sheet_values(cellRange=hookDateRange)
-            sheetTime = datetime.strptime(sheetValues[0][0], '%H:%M:%S')
+            sheetValues = sheet.get_sheet_values(cellRange=sheetCellRange)
+
+            if sheetValues:
+                sheetTime = datetime.strptime(sheetValues[0][0], '%H:%M:%S')
+            else:
+                sheetTime = datetime.strptime("00:00:00", "%H:%M:%S")
+            
             sheetDuration = timedelta(hours=sheetTime.hour, minutes=sheetTime.minute)
             totalDuration = str(clockifyDuration + sheetDuration)
 
-            result = sheet.set_sheet_values(cellRange=hookDateRange, dimension="COLUMNS", values=[[totalDuration]])
+            result = sheet.set_sheet_values(cellRange=sheetCellRange, dimension="COLUMNS", values=[[totalDuration]])
             
-            return result
+            return json.dumps(result)
         else:
             return Response("Nothing to process", 200)
     else:
