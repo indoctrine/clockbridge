@@ -21,7 +21,7 @@ flaskApp = create_app()
 
 @flaskApp.route("/webhook/clockify", methods = ['POST'])
 def webhook_receive():
-    with open('webhook-secrets.json', 'r') as fp:
+    with open('secrets/webhook-secrets.json', 'r') as fp:
         secrets = json.load(fp)
         tokens = secrets['secrets']
     token = request.headers.get('Clockify-Signature')
@@ -38,7 +38,7 @@ def webhook_receive():
             
             sheetCellRange = f'{endDate.year}!B{dayOfYear+1}' # Allow for header row
             sheet = GoogleSheet(id='1F0l7fuqEO8jvGXu0yaaq7jvrGgqubYS3iCwjgXSkuiY')
-            sheet.authenticate(credsPath='credentials.json', scopes=['https://www.googleapis.com/auth/spreadsheets'])
+            sheet.authenticate(credsPath='secrets/credentials.json', scopes=['https://www.googleapis.com/auth/spreadsheets'])
             sheet.build_service()
             sheetValues = sheet.get_sheet_values(cellRange=sheetCellRange)
 
