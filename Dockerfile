@@ -1,5 +1,7 @@
-FROM python:3.8-slim-buster
-MAINTAINER Meta <meta@meta.id.au>
+ARG CODE_VERSION=3.8-slim-buster
+
+FROM python:${CODE_VERSION}
+LABEL author="Meta <meta@meta.id.au>"
 
 WORKDIR /clockbridge
 VOLUME /opt/clockbridge:/clockbridge
