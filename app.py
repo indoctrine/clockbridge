@@ -1,5 +1,6 @@
 import json
 from GoogleSheet import GoogleSheet
+from ClockifyWebhook import ClockifyWebhook
 from datetime import datetime, timedelta
 from flask import Flask, Response, request
 
@@ -21,13 +22,12 @@ flaskApp = create_app()
 
 @flaskApp.route("/webhook/clockify", methods = ['POST'])
 def webhook_receive():
-    with open('secrets/webhook-secrets.json', 'r') as fp:
-        secrets = json.load(fp)
-        tokens = secrets['secrets']
-    token = request.headers.get('Clockify-Signature')
+    # Token is sent in Clockify-Signature header - can use this to verify requests and lockdown my endpoint
+
+    hook = ClockifyWebhook()
+    requestVerified = hook.verify_signature(request, 'webhook-secrets.json')
     
-    # Verify legitimate webhook traffic
-    if token in tokens:
+    if requestVerified:
         payload = json.loads(request.data)
 
         if payload['project']['clientName'] == 'Drawing':
