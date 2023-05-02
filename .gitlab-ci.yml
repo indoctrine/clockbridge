@@ -1,0 +1,26 @@
+image: python:latest
+
+test-job:
+    stage: test
+    before_script:
+        - python3 -m venv $(pwd)
+        - source ./bin/activate
+        - python3 -m pip install pyyaml schema xmlrunner
+        - export PYTHONPATH=$(pwd)
+    script:
+        - python3 tests/TestConfigurationClass.py
+
+    artifacts:
+      when: always
+      paths:
+        - test-config-report/
+      reports:
+        junit: test-config-report/*.xml
+
+deploy-prod:
+  tags:
+    - deploy
+  stage: deploy
+  script:
+    - echo "This job deploys something from the $CI_COMMIT_BRANCH branch."
+  environment: production

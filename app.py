@@ -1,4 +1,5 @@
 import json
+import Clockify
 from GoogleSheet import GoogleSheet
 from datetime import datetime, timedelta
 from flask import Flask, Response, request
@@ -21,13 +22,12 @@ flaskApp = create_app()
 
 @flaskApp.route("/webhook/clockify", methods = ['POST'])
 def webhook_receive():
-    with open('webhook-secrets.json', 'r') as fp:
-        secrets = json.load(fp)
-        tokens = secrets['secrets']
-    token = request.headers.get('Clockify-Signature')
+    # Token is sent in Clockify-Signature header - can use this to verify requests and lockdown my endpoint
+
+    hook = Clockify.Webhook()
+    requestVerified = hook.verify_signature(dict(request.headers), 'secrets/webhook-secrets.json')
     
-    # Verify legitimate webhook traffic
-    if token in tokens:
+    if requestVerified:
         payload = json.loads(request.data)
 
         if payload['project']['clientName'] == 'Drawing':
@@ -38,7 +38,7 @@ def webhook_receive():
             
             sheetCellRange = f'{endDate.year}!B{dayOfYear+1}' # Allow for header row
             sheet = GoogleSheet(id='1F0l7fuqEO8jvGXu0yaaq7jvrGgqubYS3iCwjgXSkuiY')
-            sheet.authenticate(credsPath='credentials.json', scopes=['https://www.googleapis.com/auth/spreadsheets'])
+            sheet.authenticate(credsPath='secrets/credentials.json', scopes=['https://www.googleapis.com/auth/spreadsheets'])
             sheet.build_service()
             sheetValues = sheet.get_sheet_values(cellRange=sheetCellRange)
 
