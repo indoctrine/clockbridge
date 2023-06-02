@@ -5,17 +5,17 @@ test-job:
     before_script:
         - python3 -m venv $(pwd)
         - source ./bin/activate
-        - python3 -m pip install pyyaml schema xmlrunner
+        - python3 -m pip install pyyaml schema pytest
         - export PYTHONPATH=$(pwd)
     script:
-        - python3 tests/TestConfigurationClass.py
+        - pytest --junitxml tests/results.xml tests/Test*.py
 
     artifacts:
       when: always
       paths:
-        - test-config-report/
+        - tests/
       reports:
-        junit: test-config-report/*.xml
+        junit: tests/results.xml
 
 deploy-prod:
   tags:
