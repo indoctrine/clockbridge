@@ -5,10 +5,10 @@ test-job:
     before_script:
         - python3 -m venv $(pwd)
         - source ./bin/activate
-        - python3 -m pip install pyyaml schema xmlrunner
+        - python3 -m pip install pyyaml schema pytest
         - export PYTHONPATH=$(pwd)
     script:
-        - python3 tests/TestConfigurationClass.py
+        - pytest --junitxml results.xml tests/TestConfigurationClass.py
 
     artifacts:
       when: always
