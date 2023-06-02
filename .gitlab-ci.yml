@@ -8,14 +8,14 @@ test-job:
         - python3 -m pip install pyyaml schema pytest
         - export PYTHONPATH=$(pwd)
     script:
-        - pytest --junitxml results.xml tests/TestConfigurationClass.py
+        - pytest --junitxml tests/results.xml tests/Test*.py
 
     artifacts:
       when: always
       paths:
-        - test-config-report/
+        - tests/
       reports:
-        junit: test-config-report/*.xml
+        junit: tests/results.xml
 
 deploy-prod:
   tags:
