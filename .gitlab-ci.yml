@@ -8,7 +8,7 @@ test-job:
         - python3 -m pip install pyyaml schema pytest
         - export PYTHONPATH=$(pwd)
     script:
-        - pytest --junitxml tests/results.xml tests/Test*.py
+        - pytest --junitxml tests/results.xml tests/
 
     artifacts:
       when: always
