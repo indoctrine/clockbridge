@@ -1,11 +1,11 @@
-import pytest
-import yaml
 import sys
 import os
 import json
 from io import StringIO
-sys.path.append(os.path.abspath('../'))
+import yaml
+import pytest
 from clockbridgeconfig import Config
+sys.path.append(os.path.abspath('../'))
 
 class TestLoadConfigFile:
     def setup_class(self):
@@ -13,12 +13,12 @@ class TestLoadConfigFile:
 
     def test_invalid_path(self):
         """ Test for nonexistent/unreadable file """
-        with pytest.raises(IOError) as exception_context:
+        with pytest.raises(IOError):
             self.config.load_config_file('nonexistent.yaml')
         
     def test_nonfile_path(self):
         """ Test for file being a directory """
-        with pytest.raises(IsADirectoryError) as exception_context:
+        with pytest.raises(IsADirectoryError):
             self.config.load_config_file(os.getcwd())
 
 class TestParseConfigFile:
@@ -28,7 +28,7 @@ class TestParseConfigFile:
     def test_invalid_config_file(self):
         """Test whether a valid non-YAML file is YAML"""
         invalid_config_file = StringIO("Not a real YAML file")
-        with pytest.raises(yaml.YAMLError) as exception_context:
+        with pytest.raises(yaml.YAMLError):
             self.config._Config__parse_config_file(invalid_config_file)
     
     def test_invalid_config_schema(self):
@@ -38,7 +38,7 @@ config:
     sheets-creds: 
         location: config.yaml
         """)
-        with pytest.raises(yaml.YAMLError) as exception_context:
+        with pytest.raises(yaml.YAMLError):
             self.config._Config__parse_config_file(invalid_config_file)
 
     def test_valid_config_file(self):
@@ -60,12 +60,12 @@ class TestLoadSheetsCreds:
 
     def test_invalid_creds_file(self):
         """ Test for nonexistent/unreadable file """
-        with pytest.raises(IOError) as exception_context:
+        with pytest.raises(IOError):
             self.config.load_sheets_creds('nonexistent.json')
         
     def test_creds_nonfile(self):
         """ Test for file being a directory """
-        with pytest.raises(IsADirectoryError) as exception_context:
+        with pytest.raises(IsADirectoryError):
             self.config.load_sheets_creds(os.getcwd())
 
 class TestValidateSheetsCreds:
@@ -75,7 +75,7 @@ class TestValidateSheetsCreds:
     def test_invalid_creds_file(self):
         """Test whether a valid non-JSON file is JSON"""
         invalid_creds_file = StringIO("Not a real JSON file")
-        with pytest.raises(json.decoder.JSONDecodeError) as exception_context:
+        with pytest.raises(json.decoder.JSONDecodeError):
             self.config._Config__validate_sheets_creds(invalid_creds_file)
     
     def test_invalid_creds_schema(self):
@@ -85,7 +85,7 @@ class TestValidateSheetsCreds:
                 "project_id": 123,
                 "testing": "test",
             }""")
-        with pytest.raises(json.decoder.JSONDecodeError) as exception_context:
+        with pytest.raises(json.decoder.JSONDecodeError):
             self.config._Config__validate_sheets_creds(invalid_creds_file)
 
     def test_valid_creds_file(self):
