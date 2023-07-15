@@ -8,22 +8,19 @@ from clockbridgeconfig import Config
 sys.path.append(os.path.abspath('../'))
 
 class TestLoadConfigFile:
-    def setup_class(self):
-        self.config = Config()
-
     def test_invalid_path(self):
         """ Test for nonexistent/unreadable file """
         with pytest.raises(IOError):
-            self.config.load_config_file('nonexistent.yaml')
+            self.config = Config('nonexistent.yaml')
         
     def test_nonfile_path(self):
         """ Test for file being a directory """
         with pytest.raises(IsADirectoryError):
-            self.config.load_config_file(os.getcwd())
+            self.config = Config(os.getcwd())
 
 class TestParseConfigFile:
     def setup_class(self):
-        self.config = Config()
+        self.config = Config('config.yaml')
     
     def test_invalid_config_file(self):
         """Test whether a valid non-YAML file is YAML"""
@@ -34,8 +31,8 @@ class TestParseConfigFile:
     def test_invalid_config_schema(self):
         invalid_config_file = StringIO("""
 config: 
-    webhook-secrets: xxx
-    sheets-creds: 
+    webhook_secrets: xxx
+    sheets_creds: 
         location: config.yaml
         """)
         with pytest.raises(yaml.YAMLError):
@@ -44,19 +41,22 @@ config:
     def test_valid_config_file(self):
         valid_config_file = StringIO("""
 config: 
-    webhook-secrets: 
+    webhook_secrets: 
     - xxxxx
     - xxxxx
-    sheets-map:
+    sheets_map:
     - testing: test
-    sheets-creds: 
+    sheets_creds: 
         location: config.yaml
         """)
-        assert type(self.config._Config__parse_config_file(valid_config_file)) is dict
+        assert type(self.config._Config__parse_config_file(valid_config_file)) is bool 
+        assert type(self.config.webhook_secrets) is list
+        assert type(self.config.sheets_map) is list
+        assert type(self.config.sheets_creds) is dict
 
 class TestLoadSheetsCreds:
     def setup_class(self):
-        self.config = Config()
+        self.config = Config('config.yaml')
 
     def test_invalid_creds_file(self):
         """ Test for nonexistent/unreadable file """
@@ -70,8 +70,8 @@ class TestLoadSheetsCreds:
 
 class TestValidateSheetsCreds:
     def setup_class(self):
-        self.config = Config()
-    
+        self.config = Config('config.yaml')
+
     def test_invalid_creds_file(self):
         """Test whether a valid non-JSON file is JSON"""
         invalid_creds_file = StringIO("Not a real JSON file")

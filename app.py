@@ -1,8 +1,9 @@
 import json
-import clockbridge
-from flask import Flask, Response, request, jsonify
+from clockbridgeconfig import Config
+from flask import Flask, Response, request
 
 app = Flask(__name__)
+config = Config('config.yaml')
 
 @app.route("/webhook/clockify", methods = ['POST'])
 def webhook():
