@@ -7,6 +7,10 @@ import pytest
 from clockbridgeconfig import Config
 sys.path.append(os.path.abspath('../'))
 
+config_path = os.environ.get('CLOCKBRIDGE_CONFIG_PATH')
+if not config_path:
+    raise ValueError('CONFIG_FILE_PATH environment variable is not set')
+
 class TestLoadConfigFile:
     def test_invalid_path(self):
         """ Test for nonexistent/unreadable file """
@@ -20,7 +24,7 @@ class TestLoadConfigFile:
 
 class TestParseConfigFile:
     def setup_class(self):
-        self.config = Config('config.yaml')
+        self.config = Config(config_path)
     
     def test_invalid_config_file(self):
         """Test whether a valid non-YAML file is YAML"""
@@ -33,7 +37,7 @@ class TestParseConfigFile:
 config: 
     webhook_secrets: xxx
     sheets_creds: 
-        location: config.yaml
+        location: testSecrets.json
         """)
         with pytest.raises(yaml.YAMLError):
             self.config._Config__parse_config_file(invalid_config_file)
@@ -47,7 +51,7 @@ config:
     sheets_map:
     - testing: test
     sheets_creds: 
-        location: config.yaml
+        location: testSecrets.json
         """)
         assert type(self.config._Config__parse_config_file(valid_config_file)) is bool 
         assert type(self.config.webhook_secrets) is list
@@ -56,7 +60,7 @@ config:
 
 class TestLoadSheetsCreds:
     def setup_class(self):
-        self.config = Config('config.yaml')
+        self.config = Config(config_path)
 
     def test_invalid_creds_file(self):
         """ Test for nonexistent/unreadable file """
@@ -70,7 +74,7 @@ class TestLoadSheetsCreds:
 
 class TestValidateSheetsCreds:
     def setup_class(self):
-        self.config = Config('config.yaml')
+        self.config = Config(config_path)
 
     def test_invalid_creds_file(self):
         """Test whether a valid non-JSON file is JSON"""

@@ -1,0 +1,9 @@
+config:
+    webhook_secrets:
+    - xxxxxxxxxxxx
+    - xxxxxxxxxxxx
+    sheets_map:
+    - drawing: xxxxxxxxxxxx
+    - drumming: xxxxxxxxxxxx
+    sheets_creds:
+      location: testSecrets.json
