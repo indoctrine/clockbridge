@@ -1,6 +1,7 @@
 import json
 import os
 from clockbridgeconfig import Config
+import clockbridge
 from flask import Flask, Response, request
 
 file_path = os.environ.get('CLOCKBRIDGE_CONFIG_PATH')
@@ -14,6 +15,9 @@ config = Config(file_path)
 def webhook():
     try:
         payload = json.loads(request.data)
+        bridge = clockbridge.Clockbridge()
+        verified = bridge.verify_webhook_signature(request.headers)
+        print(verified)
         return payload
     except:
         return Response("Malformed request body", 400)
