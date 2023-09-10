@@ -14,10 +14,9 @@ config = Config(file_path)
 @app.route("/webhook/clockify", methods = ['POST'])
 def webhook():
     try:
-        payload = json.loads(request.data)
         bridge = clockbridge.Clockbridge()
-        verified = bridge.verify_webhook_signature(request.headers)
-        print(verified)
+        verified = bridge.verify_webhook_signature(request.headers, config.webhook_secrets)
+        payload = json.loads(request.data)
         return payload
     except:
         return Response("Malformed request body", 400)
