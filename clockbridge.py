@@ -8,7 +8,6 @@ class Clockbridge:
             return False
         else:
             missing_headers = set(expected_keys).difference(headers.keys())
-
         if missing_headers:
             return False
         elif headers['clockify-signature'] in accepted_secrets:

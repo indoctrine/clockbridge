@@ -17,7 +17,10 @@ def webhook():
         bridge = clockbridge.Clockbridge()
         verified = bridge.verify_webhook_signature(request.headers, config.webhook_secrets)
         payload = json.loads(request.data)
-        return payload
+        if verified:
+            return payload
+        else:
+            return Response("Unauthorized", 403)
     except:
         return Response("Malformed request body", 400)
 
