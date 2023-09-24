@@ -25,7 +25,7 @@ class Config():
         self.sheets_id_len = 44
         config_schema = schema.Schema(
             {'config': 
-                {   # Revisit this, coz it throws too many exceptions
+                {
                     'webhook_secrets': [ str ], 
                     'sheets_map': [ dict ],
                     Optional('event_types'): Use(str, Use(str.upper)),
@@ -40,7 +40,6 @@ class Config():
             config = yaml.safe_load(config_file)
             validated_config = config_schema.validate(config)
             for key, value in validated_config['config'].items():
-                #print(key, value)
                 if key == "webhook_secrets":
                     if self.__validate_args_length(value, self.webhook_secrets_len) in value:
                         raise schema.SchemaError(f"A value in {key} does not meet the expected length of {self.webhook_secrets_len}")
