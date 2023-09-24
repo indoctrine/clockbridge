@@ -5,6 +5,7 @@ from io import StringIO
 import yaml
 import pytest
 from clockbridgeconfig import Config
+import schema
 sys.path.append(os.path.abspath('../'))
 
 config_path = os.environ.get('CLOCKBRIDGE_CONFIG_PATH')
@@ -27,6 +28,8 @@ class TestParseConfigFile:
     """ Test methods related to parsing the configuration file """
     def setup_class(self):
         self.config = Config(config_path)
+        self.webhook_secrets_len = 32
+        self.sheets_id_len = 44
 
     def test_invalid_config_file(self):
         """Test whether a valid non-YAML file is YAML"""
@@ -50,17 +53,21 @@ config:
         valid_config_file = StringIO("""
 config: 
     webhook_secrets: 
-    - xxxxx
-    - xxxxx
+    - xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    - xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     sheets_map:
-    - testing: test
+    - testing: testtesttesttesttesttesttesttesttesttesttest
+    - anothertest: testtesttesttesttesttesttesttesttesttesttest
     sheets_creds: 
         location: testSecrets.json
         """)
 
         assert isinstance(self.config._Config__parse_config_file(valid_config_file), bool)
         assert isinstance(self.config.webhook_secrets, list)
-        assert isinstance(self.config.sheets_map, list)
+        assert all(len(val) == self.webhook_secrets_len for val in self.config.webhook_secrets)
+        assert isinstance(self.config.sheets_map, list)    
+        assert all(isinstance(item, dict) for item in self.config.sheets_map)
+        assert all(all(len(val) == self.sheets_id_len for val in d.values()) for d in self.config.sheets_map)
         assert isinstance(self.config.sheets_creds, dict)
 
 class TestLoadSheetsCreds:
