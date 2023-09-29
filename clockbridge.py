@@ -1,15 +1,17 @@
+import schema
+
 class Clockbridge:
-    def verify_webhook_signature(self, request_headers, conf):
+    def verify_webhook_signature(self, request_headers, accepted_secrets):
         expected_keys = ['clockify-signature', 'clockify-webhook-event-type']
         headers = self.__normalise_headers(request_headers)
         if not headers:
             return False
         else:
             missing_headers = set(expected_keys).difference(headers.keys())
-            if missing_headers:
-                return False
-        if (headers['clockify-signature'] in conf.webhook_secrets and 
-            headers['clockify-webhook-event-type'].casefold() in conf.event_types):
+
+        if missing_headers:
+            return False
+        elif headers['clockify-signature'] in accepted_secrets:
             return True
         else:
             return False

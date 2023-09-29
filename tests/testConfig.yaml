@@ -1,14 +1,9 @@
 config:
     webhook_secrets:
-    - xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    - xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    - xxxxxxxxxxxx
+    - xxxxxxxxxxxx
     sheets_map:
-    - drawing: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-    - drumming: zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
-    event_types:
-    - NEW_TIME_ENTRY
-    - timer_stopped
-    - tIMe_EntRY_UPdAtED
-    - Time_Entry_Deleted
+    - drawing: xxxxxxxxxxxx
+    - drumming: xxxxxxxxxxxx
     sheets_creds:
       location: testSecrets.json
