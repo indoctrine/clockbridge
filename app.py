@@ -16,7 +16,6 @@ def webhook():
     try:
         bridge = clockbridge.Clockbridge()
         verified = bridge.verify_webhook_signature(request.headers, config)
-        print(verified)
         payload = json.loads(request.data)
         if verified:
             return payload
