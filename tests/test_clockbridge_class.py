@@ -6,9 +6,7 @@ from clockbridgeconfig import Config
 from clockbridge import Clockbridge
 sys.path.append(os.path.abspath('../'))
 
-config_path = os.environ.get('CLOCKBRIDGE_CONFIG_PATH')
-if not config_path:
-    raise ValueError('CONFIG_FILE_PATH environment variable is not set - please set the location of the configuration file')
+config_path = os.path.join(os.getcwd(), "tests/testConfig.yaml")
 
 class TestVerifyWebhookSignature:
     """ Test methods related to verifying the webhook signature """

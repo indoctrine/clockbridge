@@ -8,9 +8,7 @@ from clockbridgeconfig import Config
 import schema
 sys.path.append(os.path.abspath('../'))
 
-config_path = os.environ.get('CLOCKBRIDGE_CONFIG_PATH')
-if not config_path:
-    raise ValueError('CONFIG_FILE_PATH environment variable is not set - please set the location of the configuration file')
+config_path = os.path.join(os.getcwd(), "tests/testConfig.yaml")
 
 class TestLoadConfigFile:
     """ Test methods related to loading the configuration file """
@@ -50,26 +48,13 @@ config:
 
     def test_valid_config_file(self):
         """Test a valid YAML file in the correct schema returns the expected data structures"""
-        valid_config_file = StringIO("""
-config: 
-    webhook_secrets: 
-    - xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    - xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    sheets_map:
-    - testing: testtesttesttesttesttesttesttesttesttesttest
-    - anothertest: testtesttesttesttesttesttesttesttesttesttest
-    event_types: event_1
-    sheets_creds: 
-        location: testSecrets.json
-        """)
 
-        assert isinstance(self.config._Config__parse_config_file(valid_config_file), bool)
         assert isinstance(self.config.webhook_secrets, list)
         assert all(len(val) == self.webhook_secrets_len for val in self.config.webhook_secrets)
         assert isinstance(self.config.sheets_map, list)    
         assert all(isinstance(item, dict) for item in self.config.sheets_map)
         assert all(all(len(val) == self.sheets_id_len for val in d.values()) for d in self.config.sheets_map)
-        assert isinstance(self.config.event_types, dict) or isinstance(self.config.event_types, str)
+        assert isinstance(self.config.event_types, list) or isinstance(self.config.event_types, str)
         assert isinstance(self.config.sheets_creds, dict)
 
 class TestLoadSheetsCreds:

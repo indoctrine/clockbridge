@@ -6,8 +6,8 @@ config:
     - drawing: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
     - drumming: zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
     event_types:
-    - event_1
-    - event_2
-    - event_3
+    - new_time_entry
+    - modify_time_entry
+    - delete_time_entry
     sheets_creds:
       location: testSecrets.json

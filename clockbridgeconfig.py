@@ -28,7 +28,7 @@ class Config():
                 {
                     'webhook_secrets': [ str ], 
                     'sheets_map': [ dict ],
-                    'event_types': Or(And([ str ], Use(lambda s: [ x.upper() for x in s ])), And(str, Use(str.upper))),
+                    'event_types': Or(And([ str ], Use(lambda s: [ x.lower() for x in s ])), And(str, Use(str.lower))),
                     'sheets_creds': {
                             'location': str
                     }

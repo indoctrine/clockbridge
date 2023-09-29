@@ -9,7 +9,7 @@ class Clockbridge:
             if missing_headers:
                 return False
         if (headers['clockify-signature'] in conf.webhook_secrets and 
-            headers['clockify-webhook-event-type'] in conf.event_types):
+            headers['clockify-webhook-event-type'].casefold() in conf.event_types):
             return True
         else:
             return False
