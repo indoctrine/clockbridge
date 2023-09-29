@@ -6,8 +6,9 @@ config:
     - drawing: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
     - drumming: zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
     event_types:
-    - new_time_entry
-    - modify_time_entry
-    - delete_time_entry
+    - NEW_TIME_ENTRY
+    - timer_stopped
+    - tIMe_EntRY_UPdAtED
+    - Time_Entry_Deleted
     sheets_creds:
       location: testSecrets.json
