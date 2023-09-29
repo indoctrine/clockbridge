@@ -48,7 +48,6 @@ config:
 
     def test_valid_config_file(self):
         """Test a valid YAML file in the correct schema returns the expected data structures"""
-
         assert isinstance(self.config.webhook_secrets, list)
         assert all(len(val) == self.webhook_secrets_len for val in self.config.webhook_secrets)
         assert isinstance(self.config.sheets_map, list)    
