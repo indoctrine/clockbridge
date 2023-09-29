@@ -58,6 +58,7 @@ config:
     sheets_map:
     - testing: testtesttesttesttesttesttesttesttesttesttest
     - anothertest: testtesttesttesttesttesttesttesttesttesttest
+    event_types: event_1
     sheets_creds: 
         location: testSecrets.json
         """)
@@ -68,6 +69,7 @@ config:
         assert isinstance(self.config.sheets_map, list)    
         assert all(isinstance(item, dict) for item in self.config.sheets_map)
         assert all(all(len(val) == self.sheets_id_len for val in d.values()) for d in self.config.sheets_map)
+        assert isinstance(self.config.event_types, dict) or isinstance(self.config.event_types, str)
         assert isinstance(self.config.sheets_creds, dict)
 
 class TestLoadSheetsCreds:

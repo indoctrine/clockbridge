@@ -2,7 +2,7 @@ import yaml
 import json
 import os
 import schema
-from schema import Optional, Use, And
+from schema import Optional, Use, And, Or
 
 class Config():
     def __init__(self, file_path):
@@ -28,7 +28,7 @@ class Config():
                 {
                     'webhook_secrets': [ str ], 
                     'sheets_map': [ dict ],
-                    Optional('event_types'): Use(str, Use(str.upper)),
+                    'event_types': Or(And([ str ], Use(lambda s: [ x.upper() for x in s ])), And(str, Use(str.upper))),
                     'sheets_creds': {
                             'location': str
                     }

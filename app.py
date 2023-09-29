@@ -15,7 +15,7 @@ config = Config(file_path)
 def webhook():
     try:
         bridge = clockbridge.Clockbridge()
-        verified = bridge.verify_webhook_signature(request.headers, config.webhook_secrets)
+        verified = bridge.verify_webhook_signature(request.headers, config)
         payload = json.loads(request.data)
         if verified:
             return payload

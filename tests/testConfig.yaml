@@ -5,5 +5,9 @@ config:
     sheets_map:
     - drawing: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
     - drumming: zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
+    event_types:
+    - event_1
+    - event_2
+    - event_3
     sheets_creds:
       location: testSecrets.json
