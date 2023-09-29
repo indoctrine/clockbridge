@@ -4,7 +4,11 @@ import os
 import schema
 
 class Config():
-    def load_config_file(self, config_file_path):
+    def __init__(self, file_path):
+        self.config_file = file_path
+        self.file = self.__load_config_file(self.config_file)
+
+    def __load_config_file(self, config_file_path):
         if os.access(config_file_path, os.R_OK):
             with open(config_file_path, "r") as f:
                 if f.readable():
@@ -19,9 +23,9 @@ class Config():
         config_schema = schema.Schema(
             {'config': 
                 {
-                    'webhook-secrets': [ str ],
-                    'sheets-map': [ dict ],
-                    'sheets-creds': {
+                    'webhook_secrets': [ str ],
+                    'sheets_map': [ dict ],
+                    'sheets_creds': {
                             'location': str
                     }
                 }})
@@ -29,7 +33,9 @@ class Config():
         try:
             config = yaml.safe_load(config_file)
             validated_config = config_schema.validate(config)
-            return validated_config
+            for key, value in validated_config['config'].items():
+                setattr(self, key, value)
+            return True
         except (schema.SchemaError, schema.SchemaMissingKeyError):
             raise yaml.YAMLError(f"{config_file} is not in the expected schema")
         
@@ -66,8 +72,3 @@ class Config():
             return validated_creds
         except (schema.SchemaError, schema.SchemaMissingKeyError):
             raise json.decoder.JSONDecodeError(f"{sheets_creds} is not in the expected schema")
-
-if __name__ == "__main__":
-    # For testing
-    config = Config()
-    config.load_config_file('config.yaml')

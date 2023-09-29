@@ -7,6 +7,7 @@ test-job:
         - source ./bin/activate
         - python3 -m pip install pyyaml schema pytest flask
         - export PYTHONPATH=$(pwd)
+        - export CLOCKBRIDGE_CONFIG_PATH=tests/testConfig.yaml
     script:
         - pytest --junitxml tests/results.xml tests/
 
