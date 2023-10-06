@@ -22,8 +22,6 @@ docker-build:
   stage: build
   services:
     - docker:dind
-  variables:
-    SECURE_FILES_DOWNLOAD_PATH: /opt/clockbridge
   script:
     - docker-compose build
   before_script:

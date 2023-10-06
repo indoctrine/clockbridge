@@ -9,6 +9,7 @@ ENV PIP_ROOT_USER_ACTION=ignore
 ENV CLOCKBRIDGE_CONFIG_PATH=/clockbridge/config.yaml
 
 COPY requirements.txt requirements.txt
+COPY .secure_files/ /clockbridge
 RUN pip3 install --upgrade pip
 RUN pip3 install -r requirements.txt
 
