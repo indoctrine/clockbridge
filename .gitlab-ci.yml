@@ -18,14 +18,20 @@ test-job:
       reports:
         junit: tests/results.xml
 
+pre-build:
+  stage: build
+  script:
+    - curl --silent "https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/raw/main/installer" | bash
+  before_script:
+    - apt update
+    - apt install curl bash
+
 docker-build:
   stage: build
   services:
     - docker:dind
   script:
     - docker-compose build
-  before_script:
-    - curl --silent "https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/raw/main/installer" | bash
 
 deploy-prod:
   tags:
