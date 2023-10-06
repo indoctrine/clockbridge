@@ -23,5 +23,5 @@ deploy-prod:
     - deploy
   stage: deploy
   script:
-    - echo "This job deploys something from the $CI_COMMIT_BRANCH branch."
-  environment: development
+    - docker-compose up --build
+  environment: production

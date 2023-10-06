@@ -2,7 +2,7 @@ import yaml
 import json
 import os
 import schema
-from schema import Optional, Use, And, Or
+from schema import Use, And, Or
 
 class Config():
     def __init__(self, file_path):
