@@ -1,0 +1,5 @@
+Flask==2.2.5
+schema==0.7.5
+PyYaml==6.0
+google_api_python_client==2.83.0
+gunicorn==21.2.0
