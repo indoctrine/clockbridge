@@ -4,13 +4,12 @@ from GoogleSheet import GoogleSheet
 from datetime import datetime, timedelta
 from flask import Flask, Response, request
 
-def calc_timedelta(start: datetime, end: datetime):    
-    delta = end - start
-    min, sec = divmod(delta.total_seconds(), 60)
-    hour, min = divmod(min, 60)
+file_path = os.environ.get('CLOCKBRIDGE_CONFIG_PATH')
+if not file_path:
+    file_path = '/opt/clockbridge/config.yaml'
 
-    if sec > 30:
-        min += 1
+app = Flask(__name__)
+config = Config(file_path)
 
     return timedelta(hours=hour, minutes=min)
 
