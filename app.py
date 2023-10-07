@@ -6,10 +6,14 @@ from flask import Flask, Response, request
 
 file_path = os.environ.get('CLOCKBRIDGE_CONFIG_PATH')
 if not file_path:
-    file_path = '/opt/clockbridge/config.yaml'
+    file_path = '/clockbridge/config.yaml'
 
 app = Flask(__name__)
 config = Config(file_path)
+
+@app.route("/webhook/ping", methods = ['GET'])
+def ping():
+	return "Pong"
 
 @app.route("/webhook/clockify", methods = ['POST'])
 def webhook():

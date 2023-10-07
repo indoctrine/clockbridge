@@ -3,7 +3,7 @@ services:
   app:
     build: .
     volumes:
-      - .:/clockbridge
+      - /opt/clockbridge:/clockbridge
     ports:      
       - "8080:8080"
 
