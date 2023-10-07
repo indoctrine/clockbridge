@@ -1,11 +1,33 @@
-image: alpine:latest
+variables:
+  DOCKER_HOST: tcp://$CI_DEPLOY_SERVER:2375/
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: ""
+
+docker-build:
+  stage: build
+  environment: development
+  image: docker:stable
+  services:
+    - name: docker:stable-dind
+      command: ["--tls=false"]
+  before_script:
+    - apk update
+    - apk add --no-cache --upgrade py-pip python3-dev libffi-dev openssl-dev gcc libc-dev make curl
+    - pip3 install docker-compose~=1.23.0
+  script:
+    - docker-compose build
 
 test-job:
     stage: test
+    image: python:3.8-buster
+    cache:
+      paths:
+        - .cache/pip
     before_script:
         - python3 -m venv $(pwd)
         - source ./bin/activate
-        - python3 -m pip install pyyaml schema pytest flask
+        - python3 -m pip install pytest
+        - python3 -m pip install -r requirements.txt
         - export PYTHONPATH=$(pwd)
         - export CLOCKBRIDGE_CONFIG_PATH=tests/testConfig.yaml
     script:
@@ -18,25 +40,23 @@ test-job:
       reports:
         junit: tests/results.xml
 
-pre-build:
-  stage: build
-  script:
-    - curl --silent "https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/raw/main/installer" | bash
-  before_script:
-    - apt-get update
-    - apt-get install curl bash
-
-docker-build:
-  stage: build
+deploy-dev:
+  stage: deploy
+  environment: development
+  image: docker:stable
   services:
-    - docker:dind
+    - name: docker:stable-dind
+      command: ["--tls=false"]
+  dependencies:
+    - docker-build
+  before_script:
+    - apk update
+    - apk add --no-cache --upgrade py-pip python3-dev libffi-dev openssl-dev gcc libc-dev make curl
+    - pip3 install docker-compose~=1.23.0
   script:
-    - docker-compose build
-
-deploy-prod:
+    - docker-compose down
+    - docker-compose up --detach
+  after_script:
+    - curl http://${CI_DEPLOY_SERVER}:5000/webhook/ping
   tags:
     - deploy
-  stage: deploy
-  script:
-    - docker-compose up --detach
-#  environment: production
