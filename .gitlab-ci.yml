@@ -54,11 +54,11 @@ test-job:
 deploy-dev:
   stage: deploy
   environment: development
-  image: alpine:latest
-  # services:
-  #  - name: docker:stable-dind
-  #    command: ["--tls=false"]
-  dependencies:
+  image: docker:stable
+  services:
+    - name: docker:stable-dind
+      command: ["--tls=false"]
+  needs:
    - docker-build
   before_script:
       - apk update 
