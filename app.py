@@ -28,5 +28,5 @@ def webhook():
     except:
         return Response("Malformed request body", 400)
 
-if __name__ == '__main__':
-   app.run(debug=True, host="0.0.0.0")
+if __name__ == "__main__":
+	app.run(debug=False)
