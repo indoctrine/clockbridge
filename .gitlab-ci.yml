@@ -56,7 +56,7 @@ test-job:
 deploy-dev:
   stage: deploy
   environment: development
-  image: alpine:stable
+  image: alpine:latest
   # services:
   #  - name: docker:stable-dind
   #    command: ["--tls=false"]
