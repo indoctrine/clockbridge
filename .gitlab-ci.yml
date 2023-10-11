@@ -2,6 +2,7 @@ variables:
   DOCKER_HOST: tcp://$CI_DEPLOY_SERVER:2375/
   DOCKER_DRIVER: overlay2
   DOCKER_TLS_CERTDIR: ""
+  DOCKER_IMAGE_NAME: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
 
 docker-build:
   stage: build
@@ -10,8 +11,6 @@ docker-build:
   services:
     - name: docker:stable-dind
       command: ["--tls=false"]
-  variables:
-    DOCKER_IMAGE_NAME: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
   before_script:
     - docker login -u $CI_REGISTRY_USER -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
   script:
@@ -54,12 +53,12 @@ test-job:
 deploy-dev:
   stage: deploy
   environment: development
-  #image: $DOCKER_IMAGE_NAME
-  #services:
-  #  - name: docker:stable-dind
-  #    command: ["--tls=false"]
-  #dependencies:
-  #  - docker-build
+  image: docker:stable
+  services:
+   - name: docker:stable-dind
+     command: ["--tls=false"]
+  dependencies:
+   - docker-build
   #before_script:
   #  - apk update
   #  - apk add --no-cache --upgrade py-pip python3-dev libffi-dev openssl-dev gcc libc-dev make curl
