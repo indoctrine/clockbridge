@@ -61,12 +61,11 @@ deploy-dev:
   dependencies:
     - docker-build
   before_script:
-    - apk update
-    - apk add --no-cache --upgrade py-pip python3-dev libffi-dev openssl-dev gcc libc-dev make curl
-    - pip3 install docker-compose~=1.23.0
+    #- apk update
+    #- apk add --no-cache --upgrade py-pip python3-dev libffi-dev openssl-dev gcc libc-dev make curl
+    #- pip3 install docker-compose~=1.23.0
   script:
-    - docker-compose down
-    - docker-compose up --detach
+    - docker run $DOCKER_IMAGE_NAME -d
   after_script:
     - curl http://${CI_DEPLOY_SERVER}:5000/webhook/ping
   tags:
