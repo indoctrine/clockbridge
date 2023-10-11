@@ -12,9 +12,13 @@ docker-build:
     - name: docker:stable-dind
       command: ["--tls=false"]
   before_script:
+    - apk update 
+    - apk add --no-cache --upgrade py-pip python3-dev libffi-dev openssl-dev gcc libc-dev make curl
+    - pip3 install docker-compose~=1.23.0
     - docker login -u $CI_REGISTRY_USER -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
   script:
-    - docker build --pull -t "$DOCKER_IMAGE_NAME" .
+    #- docker build --pull -t "$DOCKER_IMAGE_NAME" .
+    - docker-compose build -t "$DOCKER_IMAGE_NAME"
     - docker push "$DOCKER_IMAGE_NAME"
     - |
       if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
@@ -53,18 +57,28 @@ test-job:
 deploy-dev:
   stage: deploy
   environment: development
-  image: docker:stable
-  services:
-   - name: docker:stable-dind
-     command: ["--tls=false"]
+  image: alpine:stable
+  # services:
+  #  - name: docker:stable-dind
+  #    command: ["--tls=false"]
   dependencies:
    - docker-build
-  #before_script:
-  #  - apk update
-  #  - apk add --no-cache --upgrade py-pip python3-dev libffi-dev openssl-dev gcc libc-dev make curl
-  #  - pip3 install docker-compose~=1.23.0
+  before_script:
+      - chmod og= $CI_DEPLOY_KEY
+      - apk update 
+      - apk add openssh-client
   script:
-    - docker run $DOCKER_IMAGE_NAME -d
+    - ssh -i $CI_DEPLOY_KEY -o StrictHostKeyChecking=no $CI_DEPLOY_SERVER_USER@$CI_DEPLOY_SERVER "docker login -u $CI_REGISTRY_USER -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY"
+    - |
+      if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
+        ssh -i $CI_DEPLOY_KEY -o StrictHostKeyChecking=no $CI_DEPLOY_SERVER_USER@$CI_DEPLOY_SERVER "docker pull $CI_REGISTRY_IMAGE:latest"
+        ssh -i $CI_DEPLOY_KEY -o StrictHostKeyChecking=no $CI_DEPLOY_SERVER_USER@$CI_DEPLOY_SERVER "docker container rm -f clockbridge || true"
+        ssh -i $CI_DEPLOY_KEY -o StrictHostKeyChecking=no $CI_DEPLOY_SERVER_USER@$CI_DEPLOY_SERVER "docker run -d -p 8080:8080 --name clockbridge
+      else
+        ssh -i $CI_DEPLOY_KEY -o StrictHostKeyChecking=no $CI_DEPLOY_SERVER_USER@$CI_DEPLOY_SERVER "docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
+        ssh -i $CI_DEPLOY_KEY -o StrictHostKeyChecking=no $CI_DEPLOY_SERVER_USER@$CI_DEPLOY_SERVER "docker container rm -f clockbridge || true"
+        ssh -i $CI_DEPLOY_KEY -o StrictHostKeyChecking=no $CI_DEPLOY_SERVER_USER@$CI_DEPLOY_SERVER "docker run -d -p 8080:8080 --name clockbridge
+      fi
   after_script:
     - curl http://${CI_DEPLOY_SERVER}:5000/webhook/ping
   tags:
