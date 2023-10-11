@@ -37,8 +37,6 @@ test-job:
       paths:
         - .cache/pip
     before_script:
-        - python3 -m venv $(pwd)
-        - source ./bin/activate
         - python3 -m pip install pytest
         - python3 -m pip install -r requirements.txt
         - export PYTHONPATH=$(pwd)
@@ -63,7 +61,7 @@ deploy-dev:
   dependencies:
    - docker-build
   before_script:
-      - chmod og= $CI_DEPLOY_KEY
+      - chmod og=r $CI_DEPLOY_KEY
       - apk update 
       - apk add openssh-client
   script:
