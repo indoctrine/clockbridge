@@ -63,7 +63,7 @@ deploy-dev:
   before_script:
       - chmod og= $CI_DEPLOY_KEY
       - apk update 
-      - apk add openssh-client
+      - apk add openssh-client curl
   script:
     - ssh -i $CI_DEPLOY_KEY -o StrictHostKeyChecking=no $CI_DEPLOY_SERVER_USER@$CI_DEPLOY_SERVER "docker login -u $CI_REGISTRY_USER -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY"
     - |
