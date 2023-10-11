@@ -72,11 +72,11 @@ deploy-dev:
       if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
         ssh -i $CI_DEPLOY_KEY -o StrictHostKeyChecking=no $CI_DEPLOY_SERVER_USER@$CI_DEPLOY_SERVER "docker pull $CI_REGISTRY_IMAGE:latest"
         ssh -i $CI_DEPLOY_KEY -o StrictHostKeyChecking=no $CI_DEPLOY_SERVER_USER@$CI_DEPLOY_SERVER "docker container rm -f clockbridge || true"
-        ssh -i $CI_DEPLOY_KEY -o StrictHostKeyChecking=no $CI_DEPLOY_SERVER_USER@$CI_DEPLOY_SERVER "docker run -d -p 8080:8080 --name clockbridge
+        ssh -i $CI_DEPLOY_KEY -o StrictHostKeyChecking=no $CI_DEPLOY_SERVER_USER@$CI_DEPLOY_SERVER "docker run -d -p 5000:5000 -v /docker-data/clockbridge:/config - --name clockbridge
       else
         ssh -i $CI_DEPLOY_KEY -o StrictHostKeyChecking=no $CI_DEPLOY_SERVER_USER@$CI_DEPLOY_SERVER "docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
         ssh -i $CI_DEPLOY_KEY -o StrictHostKeyChecking=no $CI_DEPLOY_SERVER_USER@$CI_DEPLOY_SERVER "docker container rm -f clockbridge || true"
-        ssh -i $CI_DEPLOY_KEY -o StrictHostKeyChecking=no $CI_DEPLOY_SERVER_USER@$CI_DEPLOY_SERVER "docker run -d -p 8080:8080 --name clockbridge
+        ssh -i $CI_DEPLOY_KEY -o StrictHostKeyChecking=no $CI_DEPLOY_SERVER_USER@$CI_DEPLOY_SERVER "docker run -d -p 5000:5000 -v /docker-data/clockbridge:/config --name clockbridge
       fi
   after_script:
     - curl http://${CI_DEPLOY_SERVER}:5000/webhook/ping
