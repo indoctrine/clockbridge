@@ -61,7 +61,7 @@ deploy-dev:
   dependencies:
    - docker-build
   before_script:
-      - chmod go+r $CI_DEPLOY_KEY
+      - chmod og= $CI_DEPLOY_KEY
       - apk update 
       - apk add openssh-client
   script:
