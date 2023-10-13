@@ -4,7 +4,7 @@
     - name: docker:stable-dind
       command: ["--tls=false"]
   script:
-    - docker login -u $CI_REGISTRY_USER -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    #- docker login -u $CI_REGISTRY_USER -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
     - apk update 
     - apk add curl
 
@@ -22,8 +22,8 @@ docker-build:
   #   - name: docker:stable-dind
   #     command: ["--tls=false"]
   extends: .dind-template  
-  # before_script:
-  #    - docker login -u $CI_REGISTRY_USER -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
   script:
     - docker build --pull -t "$DOCKER_IMAGE_NAME" .
     - docker push "$DOCKER_IMAGE_NAME"
