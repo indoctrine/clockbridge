@@ -1,18 +1,29 @@
+.dind_template: &docker-env
+  image: docker:stable
+  services:
+    - name: docker:stable-dind
+      command: ["--tls=false"]
+  script:
+    - docker login -u $CI_REGISTRY_USER -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - apk update 
+    - apk add curl
+
 variables:
   DOCKER_HOST: tcp://$CI_DEPLOY_SERVER:2375/
   DOCKER_DRIVER: overlay2
   DOCKER_TLS_CERTDIR: ""
   DOCKER_IMAGE_NAME: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
- 
+
 docker-build:
   stage: build
   environment: development
-  image: docker:stable
-  services:
-    - name: docker:stable-dind
-      command: ["--tls=false"]
-  before_script:
-    - docker login -u $CI_REGISTRY_USER -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+  # image: docker:stable
+  # services:
+  #   - name: docker:stable-dind
+  #     command: ["--tls=false"]
+  <<: *docker-env
+  # before_script:
+  #   - docker login -u $CI_REGISTRY_USER -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
   script:
     - docker build --pull -t "$DOCKER_IMAGE_NAME" .
     - docker push "$DOCKER_IMAGE_NAME"
@@ -31,10 +42,11 @@ test-container:
   stage: test
   dependencies: 
     - docker-build
-  image: docker:stable
-  before_script:
-      - apk update 
-      - apk add curl
+  <<: *docker-env
+  # image: docker:stable
+  # before_script:
+  #     - apk update 
+  #     - apk add curl
   script:
       - |
         if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
