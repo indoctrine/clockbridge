@@ -34,6 +34,8 @@ test-container:
   needs: 
     - docker-build
   <<: *dind-config  
+  services:
+    - name: docker:stable-dind
   before_script:
     - apk update 
     - apk add curl
