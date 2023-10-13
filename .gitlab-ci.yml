@@ -4,6 +4,19 @@ variables:
   DOCKER_TLS_CERTDIR: ""
   DOCKER_IMAGE_NAME: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
 
+unittest-build:
+  stage: build
+  environment: development
+  image: python:3.8-buster
+  cache:
+      paths:
+        - .cache/pip
+  script:
+    - python3 -m pip install pytest
+    - python3 -m pip install -r requirements.txt
+    - export PYTHONPATH=$(pwd)
+    - export CLOCKBRIDGE_CONFIG_PATH=tests/testConfig.yaml
+  
 docker-build:
   stage: build
   environment: development
@@ -36,11 +49,12 @@ test-job:
     cache:
       paths:
         - .cache/pip
-    before_script:
-        - python3 -m pip install pytest
-        - python3 -m pip install -r requirements.txt
-        - export PYTHONPATH=$(pwd)
-        - export CLOCKBRIDGE_CONFIG_PATH=tests/testConfig.yaml
+    extends: unittest-build
+    # before_script:
+    #     - python3 -m pip install pytest
+    #     - python3 -m pip install -r requirements.txt
+    #     - export PYTHONPATH=$(pwd)
+    #     - export CLOCKBRIDGE_CONFIG_PATH=tests/testConfig.yaml
     script:
         - pytest --junitxml tests/results.xml tests/
 
