@@ -13,7 +13,7 @@ config = Config(file_path)
 
 @app.route("/webhook/ping", methods = ['GET'])
 def ping():
-	return "Pong"
+	return "Pong\n"
 
 @app.route("/webhook/clockify", methods = ['POST'])
 def webhook():
