@@ -34,7 +34,7 @@ docker-build:
 
 test-container:
   stage: test
-  dependencies: 
+  needs: 
     - docker-build
   extends: docker-build
   script:
@@ -80,7 +80,7 @@ deploy-dev:
   # services:
   #   - name: docker:stable-dind
   #     command: ["--tls=false"]
-  extends: docker-build
+  extends: test-container
   needs:
    - docker-build
    - test-code
