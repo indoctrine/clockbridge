@@ -42,7 +42,7 @@ test-container:
   stage: test
   dependencies: 
     - docker-build
-  <<: *docker-env
+  extends: dind-template
   # image: docker:stable
   # before_script:
   #     - apk update 
