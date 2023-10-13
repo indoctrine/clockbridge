@@ -3,20 +3,7 @@ variables:
   DOCKER_DRIVER: overlay2
   DOCKER_TLS_CERTDIR: ""
   DOCKER_IMAGE_NAME: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
-
-unittest-build:
-  stage: build
-  environment: development
-  image: python:3.8-buster
-  cache:
-      paths:
-        - .cache/pip
-  script:
-    - python3 -m pip install pytest
-    - python3 -m pip install -r requirements.txt
-    - export PYTHONPATH=$(pwd)
-    - export CLOCKBRIDGE_CONFIG_PATH=tests/testConfig.yaml
-  
+ 
 docker-build:
   stage: build
   environment: development
@@ -25,9 +12,6 @@ docker-build:
     - name: docker:stable-dind
       command: ["--tls=false"]
   before_script:
-    #- apk update 
-    #- apk add --no-cache --upgrade py-pip python3-dev libffi-dev openssl-dev gcc libc-dev make curl
-    #- pip3 install docker-compose~=1.23.0
     - docker login -u $CI_REGISTRY_USER -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
   script:
     - docker build --pull -t "$DOCKER_IMAGE_NAME" .
@@ -43,18 +27,42 @@ docker-build:
       exists:
         - Dockerfile
 
-test-job:
+test-container:
+  stage: test
+  dependencies: 
+    - docker-build
+  before_script:
+      - apk update 
+      - apk add curl
+  script:
+      - |
+        if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
+          docker pull $CI_REGISTRY_IMAGE:latest
+          docker rm -f clockbridge || true
+          docker run -d -p 5000:5000 -v /docker-data/clockbridge:/config --name clockbridge-test $CI_REGISTRY_IMAGE:latest
+        else
+          docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+          docker rm -f clockbridge || true
+          docker run -d -p 5000:5000 -v /docker-data/clockbridge:/config --name clockbridge-test $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+        fi
+  after_script:
+    - curl http://${CI_DEPLOY_SERVER}:5000/webhook/ping
+    - docker rm -f clockbridge-test || true 
+  artifacts:
+    paths:
+      - build/
+
+test-code:
     stage: test
     image: python:3.8-buster
     cache:
       paths:
         - .cache/pip
-    extends: unittest-build
-    # before_script:
-    #     - python3 -m pip install pytest
-    #     - python3 -m pip install -r requirements.txt
-    #     - export PYTHONPATH=$(pwd)
-    #     - export CLOCKBRIDGE_CONFIG_PATH=tests/testConfig.yaml
+    before_script:
+        - python3 -m pip install pytest
+        - python3 -m pip install -r requirements.txt
+        - export PYTHONPATH=$(pwd)
+        - export CLOCKBRIDGE_CONFIG_PATH=tests/testConfig.yaml
     script:
         - pytest --junitxml tests/results.xml tests/
 
@@ -74,22 +82,12 @@ deploy-dev:
       command: ["--tls=false"]
   needs:
    - docker-build
+   - test-code
+   - test-container
   before_script:
       - apk update 
       - apk add curl
   script:
-    # - ssh -i $CI_DEPLOY_KEY -o StrictHostKeyChecking=no $CI_DEPLOY_SERVER_USER@$CI_DEPLOY_SERVER "docker login -u $CI_REGISTRY_USER -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY"
-    # - |
-    #   if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
-    #     ssh -i $CI_DEPLOY_KEY -o StrictHostKeyChecking=no $CI_DEPLOY_SERVER_USER@$CI_DEPLOY_SERVER "docker pull $CI_REGISTRY_IMAGE:latest"
-    #     ssh -i $CI_DEPLOY_KEY -o StrictHostKeyChecking=no $CI_DEPLOY_SERVER_USER@$CI_DEPLOY_SERVER "docker container rm -f clockbridge || true"
-    #     ssh -i $CI_DEPLOY_KEY -o StrictHostKeyChecking=no $CI_DEPLOY_SERVER_USER@$CI_DEPLOY_SERVER "docker run -d -p 5000:5000 -v /docker-data/clockbridge:/config - --name clockbridge
-    #   else
-    #     ssh -i $CI_DEPLOY_KEY -o StrictHostKeyChecking=no $CI_DEPLOY_SERVER_USER@$CI_DEPLOY_SERVER "docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
-    #     ssh -i $CI_DEPLOY_KEY -o StrictHostKeyChecking=no $CI_DEPLOY_SERVER_USER@$CI_DEPLOY_SERVER "docker container rm -f clockbridge || true"
-    #     ssh -i $CI_DEPLOY_KEY -o StrictHostKeyChecking=no $CI_DEPLOY_SERVER_USER@$CI_DEPLOY_SERVER "docker run -d -p 5000:5000 -v /docker-data/clockbridge:/config --name clockbridge
-    #   fi
-    #       - ssh -i $CI_DEPLOY_KEY -o StrictHostKeyChecking=no $CI_DEPLOY_SERVER_USER@$CI_DEPLOY_SERVER "docker login -u $CI_REGISTRY_USER -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY"
     - |
       if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
         docker pull $CI_REGISTRY_IMAGE:latest
@@ -102,5 +100,8 @@ deploy-dev:
       fi
   after_script:
     - curl http://${CI_DEPLOY_SERVER}:5000/webhook/ping
+  artifacts:
+    paths:
+      - build/
   tags:
     - deploy
