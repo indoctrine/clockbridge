@@ -20,6 +20,9 @@ docker-build:
         docker tag "$DOCKER_IMAGE_NAME" "$CI_REGISTRY_IMAGE:latest"
         docker push "$CI_REGISTRY_IMAGE:latest"
       fi
+  after_script:
+    # Tidy up untagged images
+    - docker image prune -f
   rules:
     - if: $CI_COMMIT_BRANCH
       exists:
@@ -45,7 +48,7 @@ test-container:
         docker run -d -p 4000:5000 -v /docker-data/clockbridge:/config --name clockbridge-test $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
       fi
   after_script:
-    - curl http://${CI_DEPLOY_SERVER}:5000/webhook/ping
+    - curl http://${CI_DEPLOY_SERVER}:4000/webhook/ping
     - docker rm -f clockbridge-test || true 
 
 test-code:
