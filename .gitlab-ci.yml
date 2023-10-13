@@ -33,7 +33,7 @@ test-container:
   stage: test
   needs: 
     - docker-build
-  <<: *dind-config  
+  #<<: *dind-config  
   before_script:
     - apk update 
     - apk add curl
@@ -76,7 +76,7 @@ test-code:
 deploy-dev:
   stage: deploy
   environment: development
-  <<: *dind-config  
+  #<<: *dind-config  
   needs:
    - docker-build
    - test-code
