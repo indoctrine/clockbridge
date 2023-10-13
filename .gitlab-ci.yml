@@ -2,7 +2,7 @@
   image: docker:stable
   services:
     - name: docker:stable-dind
-      command: ["--tls=false"]
+      #command: ["--tls=false"]
 
 variables:
   DOCKER_HOST: tcp://$CI_DEPLOY_SERVER:2375/
