@@ -1,7 +1,5 @@
 .dind-template: &dind-config
   image: docker:stable
-  services:
-    - name: docker:stable-dind
       #command: ["--tls=false"]
 
 variables:
@@ -14,6 +12,8 @@ docker-build:
   stage: build
   environment: development
   <<: *dind-config  
+  services:
+    - name: docker:stable-dind
   before_script:
     - docker login -u $CI_REGISTRY_USER -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
   script:
@@ -33,7 +33,7 @@ test-container:
   stage: test
   needs: 
     - docker-build
-  #<<: *dind-config  
+  <<: *dind-config  
   before_script:
     - apk update 
     - apk add curl
@@ -76,7 +76,7 @@ test-code:
 deploy-dev:
   stage: deploy
   environment: development
-  #<<: *dind-config  
+  <<: *dind-config  
   needs:
    - docker-build
    - test-code
