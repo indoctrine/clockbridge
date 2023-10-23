@@ -18,8 +18,8 @@ def ping():
 @app.route("/webhook/clockify", methods = ['POST'])
 def webhook():
     try:
-        bridge = clockbridge.Clockbridge()
-        verified = bridge.verify_webhook_signature(request.headers, config)
+        bridge = clockbridge.Clockbridge(config)
+        verified = bridge.verify_incoming_webhook(request.headers, request.data)
         payload = json.loads(request.data)
         if verified:
             return payload
