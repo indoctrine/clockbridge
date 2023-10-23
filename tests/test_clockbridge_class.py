@@ -81,3 +81,10 @@ class TestVerifyWebhookPayload:
     def test_required_fields_null(self):
         """ Test for required fields being null"""
         assert self.bridge.verify_webhook_payload(self.payload) is False
+    
+    def test_start_time_before_end_time(self):
+        """ Test that the start_time is before the end_time """
+        payload = self.payload
+        payload["timeInterval"]["start"] = "2023-03-28T09:05:13Z"
+        payload["timeInterval"]["end"] = "2023-03-29T09:05:13Z"
+        assert self.bridge.verify_webhook_payload(self.payload) is False

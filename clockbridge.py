@@ -1,5 +1,6 @@
 import schema
 import json
+from datetime import datetime
 
 class Clockbridge:
     def __init__(self, config):
@@ -66,4 +67,11 @@ class Clockbridge:
             }, ignore_extra_keys=True)
 
         validated_payload = payload_schema.validate(parsed_payload)
+        try:
+            end_time = datetime.strptime(validated_payload['timeInterval']['end'], "%Y-%m-%dT%H:%M:%SZ")
+            start_time = datetime.strptime(validated_payload['timeInterval']['start'], "%Y-%m-%dT%H:%M:%SZ")
+            if start_time > end_time:
+                return False
+        except ValueError:
+            return False
         return validated_payload
