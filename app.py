@@ -22,10 +22,10 @@ def webhook():
         verified = bridge.verify_incoming_webhook(request.headers, request.data)
         payload = json.loads(request.data)
         if verified:
-            return payload
+            return verified
         else:
             return Response("Unauthorized", 403)
-    except:
+    except Exception as e:
         return Response("Malformed request body", 400)
 
 if __name__ == "__main__":

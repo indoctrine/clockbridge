@@ -1,10 +1,14 @@
+import schema
+import json
+
 class Clockbridge:
     def __init__(self, config):
         self.config = config
 
     def verify_incoming_webhook(self, headers, payload):
-        if self.verify_webhook_signature(headers) and self.verify_webhook_payload:
-            return True
+        verify_payload = self.verify_webhook_payload(payload)
+        if self.verify_webhook_signature(headers) and verify_payload:
+            return verify_payload
         else:
             return False
 
@@ -34,4 +38,32 @@ class Clockbridge:
             return None
         
     def verify_webhook_payload(self, payload):
-        pass
+        try:
+            parsed_payload = json.loads(payload)
+        except:
+            return False
+        payload_schema = schema.Schema(
+            {
+                "id": str,
+                "description": str,
+                "userId": str,
+                "projectId": str,
+                "timeInterval": {
+                "start": str,
+                "end": str,
+                "duration": str,
+                },
+                "project": {
+                    "name": str,
+                    "clientId": str,
+                    "workspaceId": str,
+                    "estimate": {
+                        "estimate": str,
+                        "type": str
+                    },
+                "clientName": str,
+                },
+            }, ignore_extra_keys=True)
+
+        validated_payload = payload_schema.validate(parsed_payload)
+        return validated_payload
