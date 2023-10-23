@@ -1,5 +1,18 @@
+import schema
+import json
+
 class Clockbridge:
-    def verify_webhook_signature(self, request_headers, conf):
+    def __init__(self, config):
+        self.config = config
+
+    def verify_incoming_webhook(self, headers, payload):
+        verify_payload = self.verify_webhook_payload(payload)
+        if self.verify_webhook_signature(headers) and verify_payload:
+            return verify_payload
+        else:
+            return False
+
+    def verify_webhook_signature(self, request_headers):
         expected_keys = ['clockify-signature', 'clockify-webhook-event-type']
         headers = self.__normalise_headers(request_headers)
         if not headers:
@@ -8,8 +21,8 @@ class Clockbridge:
             missing_headers = set(expected_keys).difference(headers.keys())
             if missing_headers:
                 return False
-        if (headers['clockify-signature'] in conf.webhook_secrets and 
-            headers['clockify-webhook-event-type'].casefold() in conf.event_types):
+        if (headers['clockify-signature'] in self.config.webhook_secrets and 
+            headers['clockify-webhook-event-type'].casefold() in self.config.event_types):
             return True
         else:
             return False
@@ -23,3 +36,34 @@ class Clockbridge:
             return headers
         except ValueError as e:
             return None
+        
+    def verify_webhook_payload(self, payload):
+        try:
+            parsed_payload = json.loads(payload)
+        except:
+            return False
+        payload_schema = schema.Schema(
+            {
+                "id": str,
+                "description": str,
+                "userId": str,
+                "projectId": str,
+                "timeInterval": {
+                "start": str,
+                "end": str,
+                "duration": str,
+                },
+                "project": {
+                    "name": str,
+                    "clientId": str,
+                    "workspaceId": str,
+                    "estimate": {
+                        "estimate": str,
+                        "type": str
+                    },
+                "clientName": str,
+                },
+            }, ignore_extra_keys=True)
+
+        validated_payload = payload_schema.validate(parsed_payload)
+        return validated_payload
