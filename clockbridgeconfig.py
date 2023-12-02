@@ -1,8 +1,15 @@
 import yaml
 import json
 import os
-import schema
-from schema import Use, And, Or
+#import schema
+#from schema import Use, And, Or
+from pydantic import BaseModel
+
+class ConfigSchema(BaseModel):
+    webhook_secrets: list
+    event_types: lambda s: [ x.lower() for x in s ]
+    sheets_creds: dict
+    location: str
 
 class Config():
     def __init__(self, file_path):
@@ -23,32 +30,37 @@ class Config():
     def __parse_config_file(self, config_file):
         self.webhook_secrets_len = 32
         self.sheets_id_len = 44
-        config_schema = schema.Schema(
-            {'config': 
-                {
-                    'webhook_secrets': [ str ], 
-                    'sheets_map': [ dict ],
-                    'event_types': Or(And([ str ], Use(lambda s: [ x.lower() for x in s ])), And(str, Use(str.lower))),
-                    'sheets_creds': {
-                            'location': str
-                    }
-                }
-            }
-        )
+        # config_schema = schema.Schema(
+        #     {'config': 
+        #         {
+        #             'webhook_secrets': [ str ], 
+        #             'sheets_map': [ dict ],
+        #             'event_types': Or(And([ str ], Use(lambda s: [ x.lower() for x in s ])), And(str, Use(str.lower))),
+        #             'sheets_creds': {
+        #                     'location': str
+        #             }
+        #         }
+        #     }
+        # )
         
         try:
             config = yaml.safe_load(config_file)
-            validated_config = config_schema.validate(config)
-            for key, value in validated_config['config'].items():
-                if key == "webhook_secrets":
-                    if self.__validate_args_length(value, self.webhook_secrets_len) in value:
-                        raise schema.SchemaError(f"A value in {key} does not meet the expected length of {self.webhook_secrets_len}")
-                elif key == "sheets_map":
-                    if not all(self.__validate_args_length(item.values(), self.sheets_id_len) for item in value):
-                        raise schema.SchemaError(f"A value in {key} does not meet the expected length of {self.sheets_id_len}")
-                setattr(self, key, value)
+            # validated_config = config_schema.validate(config)
+            print(config)
+            schema = ConfigSchema
+            schema.model_validate(config)
+            # for key, value in validated_config['config'].items():
+            #     if key == "webhook_secrets":
+            #         if self.__validate_args_length(value, self.webhook_secrets_len) in value:
+            #             raise schema.SchemaError(f"A value in {key} does not meet the expected length of {self.webhook_secrets_len}")
+            #     elif key == "sheets_map":
+            #         if not all(self.__validate_args_length(item.values(), self.sheets_id_len) for item in value):
+            #             raise schema.SchemaError(f"A value in {key} does not meet the expected length of {self.sheets_id_len}")
+            #    setattr(self, key, value)
             return True
-        except (schema.SchemaError, schema.SchemaMissingKeyError):
+        #except (schema.SchemaError, schema.SchemaMissingKeyError):
+        except Exception as e:
+            print(e)
             raise yaml.YAMLError(f"{config_file} is not in the expected schema")
     
     def __validate_args_length(self, args, expected_length):

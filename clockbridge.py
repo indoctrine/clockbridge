@@ -1,5 +1,6 @@
 import schema
 import json
+from schema import Optional, Or
 from datetime import datetime
 
 class Clockbridge:
@@ -48,24 +49,28 @@ class Clockbridge:
                 "id": str,
                 "description": str,
                 "userId": str,
-                "projectId": str,
+                "projectId": Or(str, None),
                 "timeInterval": {
-                "start": str,
-                "end": str,
-                "duration": str,
+                    "start": str,
+                    "end": str,
+                    "duration": str,
                 },
                 "project": {
                     "name": str,
                     "clientId": str,
                     "workspaceId": str,
                     "estimate": {
-                        "estimate": str,
-                        "type": str
+                       "estimate": str,
+                       "type": str
                     },
                 "clientName": str,
                 },
             }, ignore_extra_keys=True)
 
+        try:
+            payload_schema.validate(parsed_payload)
+        except schema.SchemaError as e:
+            print(e)
         validated_payload = payload_schema.validate(parsed_payload)
         try:
             end_time = datetime.strptime(validated_payload['timeInterval']['end'], "%Y-%m-%dT%H:%M:%SZ")
@@ -75,3 +80,6 @@ class Clockbridge:
         except ValueError:
             return False
         return validated_payload
+    
+    def __null_project(self):
+        return None
