@@ -3,13 +3,15 @@ import json
 import os
 #import schema
 #from schema import Use, And, Or
+from typing import List, Union
 from pydantic import BaseModel
 
 class ConfigSchema(BaseModel):
-    webhook_secrets: list
-    event_types: lambda s: [ x.lower() for x in s ]
-    sheets_creds: dict
-    location: str
+    webhook_secrets: Union[str, List[str]]
+    #event_types: lambda s: [ x.lower() for x in s ]
+    event_types: Union[str, List[str]]
+    #sheets_creds: dict
+    #location: str
 
 class Config():
     def __init__(self, file_path):
