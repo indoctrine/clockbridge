@@ -53,7 +53,7 @@ test-container:
 
 test-code:
     stage: test
-    image: python:3.8-buster
+    image: python:3.12
     cache:
       paths:
         - .cache/pip
