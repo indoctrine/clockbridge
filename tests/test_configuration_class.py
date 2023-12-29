@@ -7,9 +7,7 @@ import pytest
 from clockbridgeconfig import Config
 sys.path.append(os.path.abspath('../'))
 
-config_path = os.environ.get('CLOCKBRIDGE_CONFIG_PATH')
-if not config_path:
-    raise ValueError('CONFIG_FILE_PATH environment variable is not set - please set the location of the configuration file')
+config_path = os.path.join(os.getcwd(), "tests/testConfig.yaml")
 
 class TestLoadConfigFile:
     """ Test methods related to loading the configuration file """
@@ -27,11 +25,13 @@ class TestParseConfigFile:
     """ Test methods related to parsing the configuration file """
     def setup_class(self):
         self.config = Config(config_path)
+        self.webhook_secrets_len = 32
+        self.sheets_id_len = 44
 
     def test_invalid_config_file(self):
         """Test whether a valid non-YAML file is YAML"""
         invalid_config_file = StringIO("Not a real YAML file")
-        with pytest.raises(yaml.YAMLError):
+        with pytest.raises(ValueError):
             self.config._Config__parse_config_file(invalid_config_file)
 
     def test_invalid_config_schema(self):
@@ -42,25 +42,17 @@ config:
     sheets_creds: 
         location: testSecrets.json
         """)
-        with pytest.raises(yaml.YAMLError):
+        with pytest.raises(ValueError):
             self.config._Config__parse_config_file(invalid_config_file)
 
     def test_valid_config_file(self):
         """Test a valid YAML file in the correct schema returns the expected data structures"""
-        valid_config_file = StringIO("""
-config: 
-    webhook_secrets: 
-    - xxxxx
-    - xxxxx
-    sheets_map:
-    - testing: test
-    sheets_creds: 
-        location: testSecrets.json
-        """)
-
-        assert isinstance(self.config._Config__parse_config_file(valid_config_file), bool)
         assert isinstance(self.config.webhook_secrets, list)
-        assert isinstance(self.config.sheets_map, list)
+        assert all(len(val) == self.webhook_secrets_len for val in self.config.webhook_secrets)
+        assert isinstance(self.config.sheets_map, list)    
+        assert all(isinstance(item, dict) for item in self.config.sheets_map)
+        assert all(all(len(val) == self.sheets_id_len for val in d.values()) for d in self.config.sheets_map)
+        assert isinstance(self.config.event_types, list) or isinstance(self.config.event_types, str)
         assert isinstance(self.config.sheets_creds, dict)
 
 class TestLoadSheetsCreds:
@@ -86,7 +78,7 @@ class TestValidateSheetsCreds:
     def test_invalid_creds_file(self):
         """Test whether a valid non-JSON file is JSON"""
         invalid_creds_file = StringIO("Not a real JSON file")
-        with pytest.raises(json.decoder.JSONDecodeError):
+        with pytest.raises(ValueError):
             self.config._Config__validate_sheets_creds(invalid_creds_file)
 
     def test_invalid_creds_schema(self):
@@ -97,7 +89,7 @@ class TestValidateSheetsCreds:
                 "project_id": 123,
                 "testing": "test",
             }""")
-        with pytest.raises(json.decoder.JSONDecodeError):
+        with pytest.raises(ValueError):
             self.config._Config__validate_sheets_creds(invalid_creds_file)
 
     def test_valid_creds_file(self):
