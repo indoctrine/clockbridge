@@ -1,31 +1,40 @@
+"""
+AUTHOR:     Beck D.
+DATE:       2023-
+PURPOSE:    This module handles loading and validating the configuration file for Clockbridge
+"""
 import json
 import os
 import yaml
 from typing_extensions import TypedDict
-from pydantic import BaseModel, FilePath, ValidationError
+from pydantic import BaseModel, FilePath, ValidationError, HttpUrl, SecretStr
 
 class ConfigCredsSchema(TypedDict):
+    """Config credentials file path schema for format: sheets_creds: { "location": "foo/bar" }"""
     location: FilePath
 
 class ConfigSchema(BaseModel):
+    """Schema for overall configuration file"""
     webhook_secrets: (str | list[str])
     event_types: (str | list[str])
     sheets_creds: ConfigCredsSchema
     sheets_map: list[dict[str, str]]
 
 class SheetsCredsSchema(BaseModel):
+    """Schema for Google Sheets credentials"""
     type: str
     project_id: str
     private_key_id: str
-    private_key: str
+    private_key: SecretStr
     client_email: str
     client_id: str
-    auth_uri: str
-    token_uri: str
-    auth_provider_x509_cert_url: str
-    client_x509_cert_url: str
+    auth_uri: HttpUrl
+    token_uri: HttpUrl
+    auth_provider_x509_cert_url: HttpUrl
+    client_x509_cert_url: HttpUrl
 
 class Config():
+    """Singleton config class where the magic happens"""
     def __init__(self, file_path):
         self.config_file = file_path
         self.webhook_secrets_len = 32
@@ -72,6 +81,7 @@ class Config():
             return False
 
     def load_sheets_creds(self, sheets_creds_path):
+        """Confirm the sheets credentials path is accessible and load it into memory"""
         if os.access(sheets_creds_path, os.R_OK):
             with open(sheets_creds_path, "r", encoding="utf-8") as f:
                 if f.readable():
