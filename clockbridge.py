@@ -77,7 +77,7 @@ class Clockbridge:
             schema = PayloadSchema
             validated_payload = schema.model_validate(parsed_payload)
         except ValidationError as e:
-            raise ValueError("Config file is not in the expected schema") from e
+            raise ValueError("Payload is not in the expected schema") from e
         return validated_payload
     
     def __null_project(self):
