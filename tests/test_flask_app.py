@@ -1,7 +1,15 @@
-import json
+import sys
+import os
+from clockbridgeconfig import Config
+sys.path.append(os.path.abspath('../'))
+
+config_path = os.path.join(os.getcwd(), "tests/testConfig.yaml")
 
 class TestRoutes:
     """Test expected results from various methods and routes"""
+    def setup_class(self):
+        self.config = Config(config_path)
+
     def test_invalid_route(self, app, client):
         """ Test an invalid route returns 404 """
         res = client.get('/')
@@ -15,7 +23,7 @@ class TestRoutes:
         assert res.status_code == expected
 
     def test_valid_route_malformed_body(self, app,client):
-        """ Test valid route with malformed body returns 400 """
+        """ Test valid route with malformed body returns 403 """
         res = client.post('/webhook/clockify', data="testingtesting")
-        expected = 400
+        expected = 403
         assert res.status_code == expected

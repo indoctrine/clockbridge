@@ -5,7 +5,6 @@ from io import StringIO
 import yaml
 import pytest
 from clockbridgeconfig import Config
-import schema
 sys.path.append(os.path.abspath('../'))
 
 config_path = os.path.join(os.getcwd(), "tests/testConfig.yaml")
@@ -32,7 +31,7 @@ class TestParseConfigFile:
     def test_invalid_config_file(self):
         """Test whether a valid non-YAML file is YAML"""
         invalid_config_file = StringIO("Not a real YAML file")
-        with pytest.raises(yaml.YAMLError):
+        with pytest.raises(ValueError):
             self.config._Config__parse_config_file(invalid_config_file)
 
     def test_invalid_config_schema(self):
@@ -43,7 +42,7 @@ config:
     sheets_creds: 
         location: testSecrets.json
         """)
-        with pytest.raises(yaml.YAMLError):
+        with pytest.raises(ValueError):
             self.config._Config__parse_config_file(invalid_config_file)
 
     def test_valid_config_file(self):
@@ -79,7 +78,7 @@ class TestValidateSheetsCreds:
     def test_invalid_creds_file(self):
         """Test whether a valid non-JSON file is JSON"""
         invalid_creds_file = StringIO("Not a real JSON file")
-        with pytest.raises(json.decoder.JSONDecodeError):
+        with pytest.raises(ValueError):
             self.config._Config__validate_sheets_creds(invalid_creds_file)
 
     def test_invalid_creds_schema(self):
@@ -90,7 +89,7 @@ class TestValidateSheetsCreds:
                 "project_id": 123,
                 "testing": "test",
             }""")
-        with pytest.raises(json.decoder.JSONDecodeError):
+        with pytest.raises(ValueError):
             self.config._Config__validate_sheets_creds(invalid_creds_file)
 
     def test_valid_creds_file(self):
