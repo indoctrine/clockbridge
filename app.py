@@ -1,4 +1,3 @@
-import json
 import os
 from clockbridgeconfig import Config
 import clockbridge
@@ -20,8 +19,9 @@ def webhook():
     try:
         bridge = clockbridge.Clockbridge(config)
         verified = bridge.verify_incoming_webhook(request.headers, request.data)
+        print(verified)
         if verified:
-            return verified
+            return verified.id
         else:
             return Response("Unauthorized", 403)
     except Exception as e:

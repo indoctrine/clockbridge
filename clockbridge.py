@@ -1,13 +1,41 @@
-import schema
+"""
+AUTHOR:     Beck D.
+DATE:       2023-
+PURPOSE:    This module handles validating the incoming payload for Clockbridge
+"""
 import json
-from schema import Optional, Or
-from datetime import datetime
+from typing import Optional
+from datetime import datetime, timedelta
+from typing_extensions import TypedDict
+from pydantic import BaseModel, ValidationError
+
+class PayloadProjectSchema(TypedDict):
+    """Validate the Project dictionary in payload"""
+    clientId: str
+    clientName: str
+    name: str
+
+class PayloadTimeSchema(TypedDict):
+    """Validate the TimeInterval dictionary in payload"""
+    duration: timedelta
+    end: datetime
+    start: datetime
+
+class PayloadSchema(BaseModel):
+    """Validate the Payload schema"""
+    description: str
+    id: str
+    project: Optional[PayloadProjectSchema]
+    projectId: Optional[str]
+    timeInterval: PayloadTimeSchema
 
 class Clockbridge:
+    """Overarching class where the magic happens"""
     def __init__(self, config):
         self.config = config
 
     def verify_incoming_webhook(self, headers, payload):
+        """Verify signature and payload"""
         verify_payload = self.verify_webhook_payload(payload)
         if self.verify_webhook_signature(headers) and verify_payload:
             return verify_payload
@@ -15,6 +43,7 @@ class Clockbridge:
             return False
 
     def verify_webhook_signature(self, request_headers):
+        """Verify the webhook headers contain correct signature"""
         expected_keys = ['clockify-signature', 'clockify-webhook-event-type']
         headers = self.__normalise_headers(request_headers)
         if not headers:
@@ -36,7 +65,7 @@ class Clockbridge:
                 headers[header_key.casefold()] = header
                 headers.pop(header_key)
             return headers
-        except ValueError as e:
+        except ValueError:
             return None
         
     def verify_webhook_payload(self, payload):
@@ -44,41 +73,11 @@ class Clockbridge:
             parsed_payload = json.loads(payload)
         except:
             return False
-        payload_schema = schema.Schema(
-            {
-                "id": str,
-                "description": str,
-                "userId": str,
-                "projectId": Or(str, None),
-                "timeInterval": {
-                    "start": str,
-                    "end": str,
-                    "duration": str,
-                },
-                "project": {
-                    "name": str,
-                    "clientId": str,
-                    "workspaceId": str,
-                    "estimate": {
-                       "estimate": str,
-                       "type": str
-                    },
-                "clientName": str,
-                },
-            }, ignore_extra_keys=True)
-
         try:
-            payload_schema.validate(parsed_payload)
-        except schema.SchemaError as e:
-            print(e)
-        validated_payload = payload_schema.validate(parsed_payload)
-        try:
-            end_time = datetime.strptime(validated_payload['timeInterval']['end'], "%Y-%m-%dT%H:%M:%SZ")
-            start_time = datetime.strptime(validated_payload['timeInterval']['start'], "%Y-%m-%dT%H:%M:%SZ")
-            if start_time > end_time:
-                return False
-        except ValueError:
-            return False
+            schema = PayloadSchema
+            validated_payload = schema.model_validate(parsed_payload)
+        except ValidationError as e:
+            raise ValueError("Config file is not in the expected schema") from e
         return validated_payload
     
     def __null_project(self):
