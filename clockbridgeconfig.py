@@ -15,8 +15,8 @@ class ConfigCredsSchema(TypedDict):
 
 class ConfigSchema(BaseModel):
     """Schema for overall configuration file"""
-    webhook_secrets: (str | list[str])
-    event_types: (str | list[str])
+    webhook_secrets: ( str | list[str] )
+    event_types: ( str | list[str] )
     sheets_creds: ConfigCredsSchema
     sheets_map: list[dict[str, str]]
 
