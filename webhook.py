@@ -29,7 +29,7 @@ class PayloadSchema(BaseModel):
     projectId: Optional[str]
     timeInterval: PayloadTimeSchema
 
-class Clockbridge:
+class Webhook:
     """Overarching class where the magic happens"""
     def __init__(self, config):
         self.config = config
@@ -80,4 +80,4 @@ class Clockbridge:
             validated_payload = schema.model_validate(parsed_payload)
         except ValidationError as e:
             raise ValueError("Payload is not in the expected schema") from e
-        return validated_payload
+        return validated_payload.model_dump()
