@@ -12,7 +12,7 @@ config = Config(file_path)
 
 @app.route("/webhook/ping", methods = ['GET'])
 def ping():
-	return "Pong\n"
+    return "Pong\n"
 
 @app.route("/webhook/clockify", methods = ['POST'])
 def webhook():
@@ -20,13 +20,11 @@ def webhook():
         bridge = clockbridge.Clockbridge(config)
         verified = bridge.verify_incoming_webhook(request.headers, request.data)
         print(verified)
-        if verified:
-            return verified.id
-        else:
+        if not verified:
             return Response("Unauthorized", 403)
     except Exception as e:
         return Response(f"{e}", 400)
         return Response("Malformed request body", 400)
 
 if __name__ == "__main__":
-	app.run(debug=True, port=5000, host='0.0.0.0')
+    app.run(debug=True, port=5000, host='0.0.0.0')

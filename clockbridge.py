@@ -57,8 +57,9 @@ class Clockbridge:
             return True
         else:
             return False
-        
+
     def __normalise_headers(self, request_headers):
+        """Normalise (Casefold) the headers so that they can be validated"""
         try:
             headers = dict(request_headers)
             for header_key, header in dict(request_headers).items():
@@ -67,11 +68,12 @@ class Clockbridge:
             return headers
         except ValueError:
             return None
-        
+
     def verify_webhook_payload(self, payload):
+        """Validate the payload against the schema"""
         try:
             parsed_payload = json.loads(payload)
-        except:
+        except Exception:
             return False
         try:
             schema = PayloadSchema
