@@ -23,7 +23,7 @@ class TestRoutes:
         assert res.status_code == expected
 
     def test_valid_route_malformed_body(self, app,client):
-        """ Test valid route with malformed body returns 403 """
+        """ Test valid route with malformed body returns 400 """
         res = client.post('/webhook/clockify', data="testingtesting")
-        expected = 403
+        expected = 400
         assert res.status_code == expected

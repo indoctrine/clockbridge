@@ -53,8 +53,6 @@ class Config():
             raise PermissionError(f"{config_file_path} cannot be opened for reading")
 
     def __parse_config_file(self, config_file):
-
-
         try:
             config = yaml.safe_load(config_file)
             schema = ConfigSchema

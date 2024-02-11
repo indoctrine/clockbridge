@@ -22,10 +22,8 @@ def clockbridge():
         if not payload:
             return Response("Unauthorized", 403)
         #duration =  verified
-        return str(payload['timeInterval']['duration'])
-
-    except Exception as e:
-        return Response(f"{e}", 400)
+        return str(payload.timeInterval['duration'])    
+    except ValueError:
         return Response("Malformed request body", 400)
 
 if __name__ == "__main__":
