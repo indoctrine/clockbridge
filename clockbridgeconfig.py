@@ -7,10 +7,12 @@ import json
 import os
 import yaml
 from typing_extensions import TypedDict
-from pydantic import BaseModel, FilePath, ValidationError, HttpUrl, SecretStr, Base64Bytes
+from pydantic import BaseModel, ValidationError, AnyHttpUrl, Base64Bytes
 
 class ConfigCredsSchema(TypedDict):
     """Config credentials schema for pushing into Elastic"""
+    url: AnyHttpUrl
+    insecure: bool
     username: str
     password: Base64Bytes
 
