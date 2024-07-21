@@ -10,7 +10,7 @@ if not file_path:
 app = Flask(__name__)
 config = Config(file_path)
 
-@app.route("/webhook/ping", methods = ['GET'])
+@app.route("/ping", methods = ['GET'])
 def ping():
     return "Pong\n"
 
