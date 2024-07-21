@@ -21,8 +21,8 @@ def clockbridge():
         payload = hook.verify_incoming_webhook(request.headers, request.data)
         if not payload:
             return Response("Unauthorized", 403)
-        #duration =  verified
-        return str(payload.timeInterval['duration'])    
+        duration = payload.timeInterval['duration']
+        return str(duration)   
     except ValueError:
         return Response("Malformed request body", 400)
 
