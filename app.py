@@ -22,6 +22,9 @@ def clockbridge():
         if not payload:
             return Response("Unauthorized", 403)
         duration = payload.timeInterval['duration']
+
+        # From here on out is just kludge code to make this work because I'm bored of manually entering data
+        
         return str(duration)   
     except ValueError:
         return Response("Malformed request body", 400)
