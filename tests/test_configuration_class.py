@@ -3,6 +3,7 @@ import os
 import json
 from io import StringIO
 import yaml
+import pydantic_core
 import pytest
 from clockbridgeconfig import Config
 sys.path.append(os.path.abspath('../'))
@@ -46,7 +47,12 @@ config:
 
     def test_valid_config_file(self):
         """Test a valid YAML file in the correct schema returns the expected data structures"""
+        print(type(self.config.elastic_creds['url']))
         assert isinstance(self.config.webhook_secrets, list)
         assert all(len(val) == self.webhook_secrets_len for val in self.config.webhook_secrets)
         assert isinstance(self.config.event_types, list) or isinstance(self.config.event_types, str)
         assert isinstance(self.config.elastic_creds, dict)
+        assert isinstance(self.config.elastic_creds['url'], pydantic_core._pydantic_core.Url)
+        assert isinstance(self.config.elastic_creds['insecure'], bool)
+        assert isinstance(self.config.elastic_creds['username'], str)
+        assert isinstance(self.config.elastic_creds['password'], bytes)

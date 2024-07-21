@@ -8,5 +8,7 @@ event_types:
 - time_entry_deleted
 elastic_creds:
   # Password must be Base64 encoded
+  url: https://test.com:9200
+  insecure: true
   username: test
   password: dGVzdDEyMwo=
