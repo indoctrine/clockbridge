@@ -8,7 +8,6 @@ import json
 from typing import Optional
 from datetime import datetime, timedelta
 from typing_extensions import TypedDict
-from collections import namedtuple
 from pydantic import BaseModel, ValidationError
 
 
@@ -47,7 +46,10 @@ class Payload:
             self.data = schema.model_validate(self.data)
             delta = self.data.timeInterval['end'] - self.data.timeInterval['start']
             if delta != self.data.timeInterval['duration']:
-                raise ValidationError            
+                raise ValidationError
+            self.data.timeInterval['start'] = self.data.timeInterval['start'].strftime('%Y-%m-%dT%H:%M:%S%z')
+            self.data.timeInterval['end'] = self.data.timeInterval['end'].strftime('%Y-%m-%dT%H:%M:%S%z')
+            self.data.timeInterval['duration'] = int(self.data.timeInterval['duration'].total_seconds())
             return True
         except ValidationError as exc:
             raise ValueError("Payload is not in the expected schema") from exc

@@ -17,3 +17,4 @@ schema==0.7.5
 typing_extensions==4.8.0
 Werkzeug==3.0.1
 gunicorn==22.0.0
+requests==2.32.3
