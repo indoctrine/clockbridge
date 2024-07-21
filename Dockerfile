@@ -11,7 +11,7 @@ COPY nginx/nginx.conf /etc/nginx/conf.d/default.conf
 RUN apt-get update && apt-get install python3 python3-pip -y
 
 COPY . . 
-RUN --mount=type=cache,target=/root/.cache/pip pip3 install -r /clockbridge/requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip pip3 install -r /clockbridge/requirements.txt --break-system-packages
 
 EXPOSE 5000
 COPY entrypoint.sh /entrypoint.sh

@@ -1,6 +1,6 @@
 import os
 from clockbridgeconfig import Config
-import clockbridge
+import webhook
 from flask import Flask, Response, request
 
 file_path = os.environ.get('CLOCKBRIDGE_CONFIG_PATH')
@@ -10,20 +10,20 @@ if not file_path:
 app = Flask(__name__)
 config = Config(file_path)
 
-@app.route("/webhook/ping", methods = ['GET'])
+@app.route("/ping", methods = ['GET'])
 def ping():
     return "Pong\n"
 
 @app.route("/webhook/clockify", methods = ['POST'])
-def webhook():
+def clockbridge():
     try:
-        bridge = clockbridge.Clockbridge(config)
-        verified = bridge.verify_incoming_webhook(request.headers, request.data)
-        print(verified)
-        if not verified:
+        hook = webhook.Webhook(config)
+        payload = hook.verify_incoming_webhook(request.headers, request.data)
+        if not payload:
             return Response("Unauthorized", 403)
-    except Exception as e:
-        return Response(f"{e}", 400)
+        duration = payload.timeInterval['duration']
+        return str(duration)   
+    except ValueError:
         return Response("Malformed request body", 400)
 
 if __name__ == "__main__":
