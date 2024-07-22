@@ -5,7 +5,6 @@ PURPOSE:    This module handles validating the incoming payload for Clockbridge
 """
 
 from payload import Payload
-import json
 
 class Webhook:
     """Overarching class where the magic happens"""
@@ -27,6 +26,9 @@ class Webhook:
             missing_headers = set(expected_keys).difference(headers.keys())
             if missing_headers:
                 return False
+        else:
+            return False
+        
         if (headers['clockify-signature'] in self.config.webhook_secrets and 
             headers['clockify-webhook-event-type'].casefold() in self.config.event_types):
             return True
