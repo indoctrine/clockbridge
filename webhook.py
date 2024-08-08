@@ -31,6 +31,7 @@ class Webhook:
         
         if (headers['clockify-signature'] in self.config.webhook_secrets and 
             headers['clockify-webhook-event-type'].casefold() in self.config.event_types):
+            self.action = headers['clockify-webhook-event-type']
             return True
         return False
 
@@ -50,6 +51,6 @@ class Webhook:
         try:
             payload = Payload(data)
             payload.validate_schema()
-            return payload.data
+            return dict(payload.data)
         except Exception as exc:
             raise ValueError("Malformed payload") from exc
