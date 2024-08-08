@@ -50,6 +50,10 @@ class Config():
                 if key == "webhook_secrets":
                     if not self.__validate_args_length(value, self.webhook_secrets_len):
                         raise ValueError(f"A value in {key} does not meet the expected length of {self.webhook_secrets_len}")
+                elif key == "event_types":
+                    # Set all event_types to lowercase for comparisons
+                    temp_list = [x.casefold() for x in value]
+                    value = temp_list
                 setattr(self, key, value)
             return True
         except ValidationError as e:
