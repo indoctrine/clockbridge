@@ -23,36 +23,54 @@ def ping():
 def clockbridge():
     try:
         hook = webhook.Webhook(config)
+        print(request.data, request.headers)
         payload = hook.verify_incoming_webhook(request.headers, request.data)
         if not payload:
             return Response("Unauthorized", 403)
-        duration = payload.timeInterval['duration']
-
     except ValueError:
         return Response("Malformed request body", 400)
 
     try:
         # From here on out is just kludge code to make this work because I'm bored of manually entering data
         now = datetime.now().astimezone()
-        
         index_name = f"test-{now.strftime('%Y-%m')}"
-        ts = { "@timestamp": now.strftime('%Y-%m-%dT%H:%M:%S%z') }
-        upstream_payload = dict(payload)
-        upstream_payload.update(ts)
-
+        payload['@timestamp'] = now.strftime('%Y-%m-%dT%H:%M:%S%z')
         pwd = config.elastic_creds['password'].decode().strip()
         
-        r = requests.post(f"{config.elastic_creds['url']}{index_name}/_doc/?pretty",
-                          data=json.dumps(upstream_payload),
-                          auth=(config.elastic_creds['username'], pwd),
-                          verify=not config.elastic_creds['insecure'],
-                          headers={"Content-Type": "application/json"}
-                    )
+        if hook.action == "TIME_ENTRY_DELETED":
+            r = delete_doc(config.elastic_creds['url'], index_name, payload['id'], config.elastic_creds['username'], pwd)
 
-        return r.content
+        elif hook.action == "TIME_ENTRY_UPDATED":
+            r = delete_doc(config.elastic_creds['url'], index_name, payload['id'], config.elastic_creds['username'], pwd)
+            r = create_doc(config.elastic_creds['url'], index_name, payload['id'], config.elastic_creds['username'], pwd, payload)
+        else:
+            r = create_doc(config.elastic_creds['url'], index_name, payload['id'], config.elastic_creds['username'], pwd, payload)
+        return r
 
-    except:
+    except Exception as e:
+        print(e)
         return Response(503)
+    
+def delete_doc(url, index, doc_id, user, pwd, verify_ssl=False):
+    r = requests.delete(f"{url}{index}/_doc/{doc_id}",
+                    auth=(user, pwd),
+                    verify=verify_ssl,
+                    headers={"Content-Type": "application/json"},
+                    timeout=10
+                )    
+    print(r.content)
+    return r.content
+
+def create_doc(url, index, doc_id, user, pwd, payload, verify_ssl=False):
+    r = requests.post(f"{url}{index}/_create/{doc_id}",
+                    data=json.dumps(payload),
+                    auth=(user, pwd),
+                    verify=verify_ssl,
+                    headers={"Content-Type": "application/json"},
+                    timeout=10
+                )    
+    print(r.content)
+    return r.content
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000, host='0.0.0.0')
