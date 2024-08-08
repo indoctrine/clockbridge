@@ -13,4 +13,4 @@ COPY . .
 RUN --mount=type=cache,target=/root/.cache/pip pip3 install -r /clockbridge/requirements.txt --break-system-packages
 
 EXPOSE 5000
-CMD ["gunicorn", "-b", "0.0.0.0:5000", "app:app"]
+ENTRYPOINT ["gunicorn", "-b", "0.0.0.0:5000", "app:app"]
