@@ -28,7 +28,7 @@ class Webhook:
                 return False
         else:
             return False
-        
+
         if (headers['clockify-signature'] in self.config.webhook_secrets and 
             headers['clockify-webhook-event-type'].casefold() in self.config.event_types):
             self.action = headers['clockify-webhook-event-type']

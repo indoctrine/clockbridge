@@ -33,7 +33,7 @@ def clockbridge():
     try:
         # From here on out is just kludge code to make this work because I'm bored of manually entering data
         now = datetime.now().astimezone()
-        index_name = f"test-{now.strftime('%Y-%m')}"
+        index_name = f"hobbies-{now.strftime('%Y-%m')}"
         payload['@timestamp'] = now.strftime('%Y-%m-%dT%H:%M:%S%z')
         pwd = config.elastic_creds['password'].decode().strip()
         
