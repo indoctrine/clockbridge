@@ -1,7 +1,15 @@
-import json
+import sys
+import os
+from clockbridgeconfig import Config
+sys.path.append(os.path.abspath('../'))
+
+config_path = os.path.join(os.getcwd(), "tests/testConfig.yaml")
 
 class TestRoutes:
     """Test expected results from various methods and routes"""
+    def setup_class(self):
+        self.config = Config(config_path)
+
     def test_invalid_route(self, app, client):
         """ Test an invalid route returns 404 """
         res = client.get('/')

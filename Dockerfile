@@ -1,15 +1,16 @@
-ARG CODE_VERSION=3.8-slim-buster
+FROM python:3.12
 
-FROM python:${CODE_VERSION}
 LABEL author="Meta <meta@meta.id.au>"
 
 WORKDIR /clockbridge
-VOLUME /opt/clockbridge:/clockbridge
+VOLUME /config
+ENV PIP_ROOT_USER_ACTION=ignore
+ENV CLOCKBRIDGE_CONFIG_PATH=/config/config.yaml
 
-COPY requirements.txt requirements.txt
-RUN pip3 install --upgrade pip
-RUN pip3 install -r requirements.txt
+RUN apt-get update && apt-get install python3 python3-pip -y
 
-COPY . .
+COPY . . 
+RUN --mount=type=cache,target=/root/.cache/pip pip3 install -r /clockbridge/requirements.txt --break-system-packages
 
-CMD ["python3", "-m", "flask", "run", "--host=0.0.0.0"]
+EXPOSE 5000
+ENTRYPOINT ["gunicorn", "-b", "0.0.0.0:5000", "app:app"]

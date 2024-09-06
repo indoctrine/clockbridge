@@ -1,14 +1,69 @@
-build-job:
-  tags:
-    - build
-  stage: build
-  script:
-    - echo "Hello, $GITLAB_USER_LOGIN!"
+variables:
+  DOCKER_HOST: tcp://$CI_DEPLOY_SERVER:2375/
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: ""
+  DOCKER_IMAGE_NAME: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
 
-test-job1:
-  stage: test
+docker-build:
+  stage: build
+  environment: development
+  image: docker:stable
+  services:
+    - name: docker:stable-dind
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
   script:
-    - echo "This job tests something"
+    - docker build --pull -t "$DOCKER_IMAGE_NAME" .
+    - docker push "$DOCKER_IMAGE_NAME"
+    - |
+      if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
+        docker tag "$DOCKER_IMAGE_NAME" "$CI_REGISTRY_IMAGE:latest"
+        docker push "$CI_REGISTRY_IMAGE:latest"
+      fi
+  after_script:
+    # Tidy up untagged images
+    - docker image prune -f
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      exists:
+        - Dockerfile
+
+test-container:
+  stage: test
+  needs: 
+    - docker-build
+  extends: docker-build
+  before_script:
+    - apk update 
+    - apk add curl
+  script:
+    - |
+      if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
+        docker pull $CI_REGISTRY_IMAGE:latest
+        docker rm -f clockbridge-test || true
+        docker run -d -p 4000:5000 -v /docker-data/clockbridge:/config --name clockbridge-test $CI_REGISTRY_IMAGE:latest
+      else
+        docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+        docker rm -f clockbridge-test || true
+        docker run -d -p 4000:5000 -v /docker-data/clockbridge:/config --name clockbridge-test $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+      fi
+  after_script:
+    - curl http://${CI_DEPLOY_SERVER}:4000/webhook/ping
+    - docker rm -f clockbridge-test || true 
+
+test-code:
+    stage: test
+    image: python:3.12
+    cache:
+      paths:
+        - .cache/pip
+    before_script:
+        - python3 -m pip install pytest
+        - python3 -m pip install -r requirements.txt
+        - export PYTHONPATH=$(pwd)
+        - export CLOCKBRIDGE_CONFIG_PATH=tests/testConfig.yaml
+    script:
+        - pytest --junitxml tests/results.xml tests/
 
 test-job2:
   tags:
@@ -20,10 +75,27 @@ test-job2:
     - echo "which simulates a test that runs 20 seconds longer than test-job1"
     - sleep 20
 
-deploy-prod:
+deploy-dev:
+  stage: deploy
+  environment: development
+  image: docker:stable
+  services:
+    - name: docker:stable-dind
+    #  command: ["--tls=false"] 
+  needs:
+   - docker-build
+   - test-code
+   - test-container
+  script:
+    - |
+      if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
+        docker pull $CI_REGISTRY_IMAGE:latest
+        docker rm -f clockbridge || true
+        docker run -d -p 5000:5000 -v /docker-data/clockbridge:/config --name clockbridge $CI_REGISTRY_IMAGE:latest
+      else
+        docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+        docker rm -f clockbridge || true
+        docker run -d -p 5000:5000 -v /docker-data/clockbridge:/config --name clockbridge $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+      fi
   tags:
     - deploy
-  stage: deploy
-  script:
-    - echo "This job deploys something from the $CI_COMMIT_BRANCH branch."
-  environment: development
