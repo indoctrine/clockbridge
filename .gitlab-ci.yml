@@ -2,7 +2,8 @@ variables:
   DOCKER_HOST: tcp://$CI_DEPLOY_SERVER:2375/
   DOCKER_DRIVER: overlay2
   DOCKER_TLS_CERTDIR: ""
-  DOCKER_IMAGE_NAME: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+  VERSION: $(date +%Y%m%d)
+  DOCKER_IMAGE_NAME: $CI_REGISTRY_IMAGE:$VERSION
 
 docker-build:
   stage: build
@@ -38,13 +39,12 @@ test-container:
     - apk add curl
   script:
     - |
-      export VERSION=$(date +%y.%m)
       if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
         docker pull $CI_REGISTRY_IMAGE:latest
         docker rm -f clockbridge-test || true
         docker run -d -p 4000:5000 -v /docker-data/clockbridge:/config --name clockbridge-test $CI_REGISTRY_IMAGE:latest
       else
-        docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+        docker pull $CI_REGISTRY_IMAGE:$VERSION
         docker rm -f clockbridge-test || true
         docker run -d -p 4000:5000 -v /docker-data/clockbridge:/config --name clockbridge-test $CI_REGISTRY_IMAGE:$VERSION
       fi
@@ -86,7 +86,6 @@ deploy-dev:
    - test-container
   script:
     - |
-      export VERSION=$(date +%y.%m)
       if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
         docker pull $CI_REGISTRY_IMAGE:latest
         docker rm -f clockbridge || true
