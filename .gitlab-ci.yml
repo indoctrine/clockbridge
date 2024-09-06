@@ -38,6 +38,7 @@ test-container:
     - apk add curl
   script:
     - |
+      export VERSION=$(date +%y.%m)
       if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
         docker pull $CI_REGISTRY_IMAGE:latest
         docker rm -f clockbridge-test || true
@@ -45,7 +46,7 @@ test-container:
       else
         docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
         docker rm -f clockbridge-test || true
-        docker run -d -p 4000:5000 -v /docker-data/clockbridge:/config --name clockbridge-test $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+        docker run -d -p 4000:5000 -v /docker-data/clockbridge:/config --name clockbridge-test $CI_REGISTRY_IMAGE:$VERSION
       fi
   after_script:
     - curl http://${CI_DEPLOY_SERVER}:4000/webhook/ping
@@ -85,14 +86,15 @@ deploy-dev:
    - test-container
   script:
     - |
+      export VERSION=$(date +%y.%m)
       if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
         docker pull $CI_REGISTRY_IMAGE:latest
         docker rm -f clockbridge || true
         docker run -d -p 5000:5000 -v /docker-data/clockbridge:/config --name clockbridge $CI_REGISTRY_IMAGE:latest
       else
-        docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+        docker pull $CI_REGISTRY_IMAGE:$VERSION
         docker rm -f clockbridge || true
-        docker run -d -p 5000:5000 -v /docker-data/clockbridge:/config --name clockbridge $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+        docker run -d -p 5000:5000 -v /docker-data/clockbridge:/config --name clockbridge $CI_REGISTRY_IMAGE:$VERSION
       fi
   tags:
     - deploy
