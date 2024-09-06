@@ -1,13 +1,14 @@
 webhook_secrets:
 - xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 - yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-sheets_map:
-- drawing: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-- drumming: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
 event_types: 
 - new_time_entry
 - timer_stopped
 - time_entry_UPDATED
 - time_entry_deleted
-sheets_creds:
-  location: tests/testSecrets.json
+elastic_creds:
+  # Password must be Base64 encoded
+  url: https://test.com:9200
+  insecure: true
+  username: test
+  password: dGVzdDEyMwo=
