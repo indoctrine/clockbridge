@@ -3,6 +3,12 @@ variables:
   DOCKER_DRIVER: overlay2
   DOCKER_TLS_CERTDIR: ""
   DOCKER_IMAGE_NAME: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+  CLOCKBRIDGE_CONFIG_DIR: /docker-data/clockbridge
+
+# Ensure docker is working on the Gitlab runner
+default:
+  before_script:
+    - docker info
 
 docker-build:
   stage: build
@@ -40,12 +46,12 @@ test-container:
     - |
       if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
         docker pull $CI_REGISTRY_IMAGE:latest
-        docker rm -f clockbridge-test || true
-        docker run -d -p 4000:5000 -v /docker-data/clockbridge:/config --name clockbridge-test $CI_REGISTRY_IMAGE:latest
+        docker rm -f clockbridge-test
+        docker run -d -p 4000:5000 -v $CLOCKBRIDGE_CONFIG_DIR:/config --name clockbridge-test $CI_REGISTRY_IMAGE:latest
       else
         docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
-        docker rm -f clockbridge-test || true
-        docker run -d -p 4000:5000 -v /docker-data/clockbridge:/config --name clockbridge-test $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+        docker rm -f clockbridge-test
+        docker run -d -p 4000:5000 -v $CLOCKBRIDGE_CONFIG_DIR:/config --name clockbridge-test $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
       fi
   after_script:
     - '[ $( curl -q ${CI_DEPLOY_SERVER}:4000/ping ) = "Pong" ]'
@@ -90,11 +96,29 @@ deploy-dev:
   tags:
     - deploy
 
-# deploy-prod:
-#   stage: deploy
-#   environment: production
-#   when: manual
-#   rules:
-#     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-#   needs: 
-#     - deploy-dev
+deploy-prod:
+  stage: deploy
+  environment: production
+  image: docker:stable
+  services:
+    - name: docker:stable-dind
+  when: manual
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  needs: 
+    - deploy-dev
+  script:
+    - |
+      if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
+        docker pull $CI_REGISTRY_IMAGE:latest
+        docker rm -f clockbridge || true
+        docker run -d -p 5000:5000 -v $CLOCKBRIDGE_CONFIG_DIR:/config --name clockbridge $CI_REGISTRY_IMAGE:latest
+      else
+        docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+        docker rm -f clockbridge || true
+        docker run -d -p 5000:5000 -v $CLOCKBRIDGE_CONFIG_DIR:/config --name clockbridge $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+      fi
+  after_script:
+    - '[ $( curl -q ${CI_DEPLOY_SERVER}:5000/ping ) = "Pong" ]'
+  tags:
+    - deploy
