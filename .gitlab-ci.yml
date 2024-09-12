@@ -48,7 +48,7 @@ test-container:
         docker run -d -p 4000:5000 -v /docker-data/clockbridge:/config --name clockbridge-test $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
       fi
   after_script:
-    - curl http://${CI_DEPLOY_SERVER}:4000/webhook/ping
+    - '[ $( curl -q ${CI_DEPLOY_SERVER}:4000/ping ) = "Pong" ]'
     - docker rm -f clockbridge-test || true 
 
 test-code:
@@ -64,16 +64,6 @@ test-code:
         - export CLOCKBRIDGE_CONFIG_PATH=tests/testConfig.yaml
     script:
         - pytest --junitxml tests/results.xml tests/
-
-test-job2:
-  tags:
-    - test
-  stage: test
-  script:
-    - echo "This job tests something, but takes more time than test-job1."
-    - echo "After the echo commands complete, it runs the sleep command for 20 seconds"
-    - echo "which simulates a test that runs 20 seconds longer than test-job1"
-    - sleep 20
 
 deploy-dev:
   stage: deploy
@@ -99,3 +89,12 @@ deploy-dev:
       fi
   tags:
     - deploy
+
+# deploy-prod:
+#   stage: deploy
+#   environment: production
+#   when: manual
+#   rules:
+#     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+#   needs: 
+#     - deploy-dev
