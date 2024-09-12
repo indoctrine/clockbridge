@@ -5,6 +5,7 @@ from flask import Flask, Response, request
 
 # Kludge libraries
 import requests
+import urllib3
 from datetime import datetime, timezone
 import json
 
@@ -32,6 +33,7 @@ def clockbridge():
 
     try:
         # From here on out is just kludge code to make this work because I'm bored of manually entering data
+        urllib3.disable_warnings(category=urllib3.exceptions.InsecureRequestWarning)
         now = datetime.now().astimezone()
         index_name = f"hobbies-{now.strftime('%Y-%m')}"
         payload['@timestamp'] = now.strftime('%Y-%m-%dT%H:%M:%S%z')
