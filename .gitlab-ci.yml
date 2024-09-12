@@ -36,29 +36,6 @@ docker-build:
       exists:
         - Dockerfile
 
-test-container:
-  stage: test
-  needs: 
-    - docker-build
-  extends: docker-build
-  before_script:
-    - apk update 
-    - apk add curl
-  script:
-    - >
-      if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
-        docker pull $CI_REGISTRY_IMAGE:latest
-        docker rm -f clockbridge-test || true
-        docker run -d -p 4000:5000 -v $CLOCKBRIDGE_CONFIG_DIR:/config --name clockbridge-test $CI_REGISTRY_IMAGE:latest
-      else
-        docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
-        docker rm -f clockbridge-test || true
-        docker run -d -p 4000:5000 -v $CLOCKBRIDGE_CONFIG_DIR:/config --name clockbridge-test $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
-      fi
-  after_script:
-    - '[ $( curl -q ${CI_DEPLOY_SERVER}:4000/ping ) = "Pong" ]'
-    - docker rm -f clockbridge-test
-
 test-code:
     stage: test
     image: python:3.12
@@ -79,11 +56,9 @@ deploy-dev:
   image: docker:stable
   services:
     - name: docker:stable-dind
-    #  command: ["--tls=false"] 
   needs:
    - docker-build
    - test-code
-   - test-container
   script:
     - >
       if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
@@ -95,6 +70,9 @@ deploy-dev:
         docker rm -f clockbridge || true
         docker run -d -p 5000:5000 -v /docker-data/clockbridge:/config --name clockbridge $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
       fi
+  after_script:
+    - '[ $( curl -q ${CI_DEPLOY_SERVER}:5000/ping ) = "Pong" ]'
+    - docker image prune -f
   tags:
     - deploy
 
@@ -126,5 +104,6 @@ deploy-prod:
       fi
   after_script:
     - '[ $( curl -q ${CI_DEPLOY_SERVER}:5000/ping ) = "Pong" ]'
+    - docker image prune -f
   tags:
     - deploy
