@@ -28,9 +28,6 @@ docker-build:
         docker tag "$DOCKER_IMAGE_NAME" "$CI_REGISTRY_IMAGE:latest"
         docker push "$CI_REGISTRY_IMAGE:latest"
       fi
-  after_script:
-    # Tidy up untagged images
-    #- docker image prune -f
   rules:
     - if: $CI_COMMIT_BRANCH
       exists:
@@ -72,7 +69,7 @@ deploy-dev:
       fi
   after_script:
     - '[ $( curl -q ${CI_DEPLOY_SERVER}:5000/ping ) = "Pong" ]'
-    #- docker image prune -f
+    - docker rmi $(docker images -f dangling=true -f reference=$CI_REGISTRY_IMAGE -q)
   tags:
     - deploy
 
@@ -104,6 +101,6 @@ deploy-prod:
       fi
   after_script:
     - '[ $( curl -q ${CI_DEPLOY_SERVER}:5000/ping ) = "Pong" ]'
-    #- docker image prune -f
+    - docker rmi $(docker images -f dangling=true -f reference=$CI_REGISTRY_IMAGE -q)
   tags:
     - deploy
