@@ -1,6 +1,7 @@
 FROM python:3.12
 
 LABEL author="Meta <meta@meta.id.au>"
+LABEL app="Clockbridge"
 
 WORKDIR /clockbridge
 VOLUME /config
