@@ -21,7 +21,7 @@ docker-build:
   script:
     - docker build --pull -t "$DOCKER_IMAGE_NAME" .
     - docker push "$DOCKER_IMAGE_NAME"
-    - |
+    - >
       if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
         docker tag "$DOCKER_IMAGE_NAME" "$CI_REGISTRY_IMAGE:latest"
         docker push "$CI_REGISTRY_IMAGE:latest"
@@ -43,7 +43,7 @@ test-container:
     - apk update 
     - apk add curl
   script:
-    - |
+    - >
       if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
         docker pull $CI_REGISTRY_IMAGE:latest
         docker rm -f clockbridge-test
@@ -83,7 +83,7 @@ deploy-dev:
    - test-code
    - test-container
   script:
-    - |
+    - >
       if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
         docker pull $CI_REGISTRY_IMAGE:latest
         docker rm -f clockbridge || true
@@ -108,7 +108,7 @@ deploy-prod:
   needs: 
     - deploy-dev
   script:
-    - |
+    - >
       if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
         docker pull $CI_REGISTRY_IMAGE:latest
         docker rm -f clockbridge || true
