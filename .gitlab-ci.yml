@@ -2,7 +2,7 @@ variables:
   DOCKER_HOST: tcp://$CI_DEPLOY_SERVER:2375/
   #DOCKER_DRIVER: overlay2
   DOCKER_TLS_CERTDIR: ""
-  DOCKER_IMAGE_NAME: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+  DOCKER_IMAGE_NAME: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME
   CLOCKBRIDGE_CONFIG_DIR: /docker-data/clockbridge
   # Enable full output in job log
   FF_SCRIPT_SECTIONS: 1
@@ -52,9 +52,9 @@ test-container:
         docker rm -f clockbridge-test || true
         docker run -d -p 4000:5000 -v $CLOCKBRIDGE_CONFIG_DIR:/config --name clockbridge-test $CI_REGISTRY_IMAGE:latest
       else
-        docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+        docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME
         docker rm -f clockbridge-test || true
-        docker run -d -p 4000:5000 -v $CLOCKBRIDGE_CONFIG_DIR:/config --name clockbridge-test $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+        docker run -d -p 4000:5000 -v $CLOCKBRIDGE_CONFIG_DIR:/config --name clockbridge-test $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME
       fi
   after_script:
     - '[ $( curl -q ${CI_DEPLOY_SERVER}:4000/ping ) = "Pong" ]'
@@ -92,9 +92,9 @@ deploy-dev:
         docker rm -f clockbridge || true
         docker run -d -p 5000:5000 -v /docker-data/clockbridge:/config --name clockbridge $CI_REGISTRY_IMAGE:latest
       else
-        docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+        docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME
         docker rm -f clockbridge || true
-        docker run -d -p 5000:5000 -v /docker-data/clockbridge:/config --name clockbridge $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+        docker run -d -p 5000:5000 -v /docker-data/clockbridge:/config --name clockbridge $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME
       fi
   tags:
     - deploy
@@ -121,9 +121,9 @@ deploy-prod:
         docker rm -f clockbridge || true
         docker run -d -p 5000:5000 -v $CLOCKBRIDGE_CONFIG_DIR:/config --name clockbridge $CI_REGISTRY_IMAGE:latest
       else
-        docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+        docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME
         docker rm -f clockbridge || true
-        docker run -d -p 5000:5000 -v $CLOCKBRIDGE_CONFIG_DIR:/config --name clockbridge $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+        docker run -d -p 5000:5000 -v $CLOCKBRIDGE_CONFIG_DIR:/config --name clockbridge $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME
       fi
   after_script:
     - '[ $( curl -q ${CI_DEPLOY_SERVER}:5000/ping ) = "Pong" ]'
