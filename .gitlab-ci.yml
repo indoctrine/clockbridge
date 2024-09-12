@@ -102,6 +102,7 @@ deploy-dev:
 deploy-prod:
   stage: deploy
   environment: production
+  allow_failure: false
   image: docker:stable
   services:
     - name: docker:stable-dind
