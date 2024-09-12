@@ -110,6 +110,9 @@ deploy-prod:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
   needs: 
     - deploy-dev
+  before_script:
+    - apk update 
+    - apk add curl
   script:
     - >
       if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
