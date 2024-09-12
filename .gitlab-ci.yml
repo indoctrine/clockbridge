@@ -56,6 +56,9 @@ deploy-dev:
   needs:
    - docker-build
    - test-code
+  before_script:
+    - apk update 
+    - apk add curl
   script:
     - >
       if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
