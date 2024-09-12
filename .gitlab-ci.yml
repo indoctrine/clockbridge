@@ -4,6 +4,9 @@ variables:
   DOCKER_TLS_CERTDIR: ""
   DOCKER_IMAGE_NAME: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
   CLOCKBRIDGE_CONFIG_DIR: /docker-data/clockbridge
+  # Enable full output in job log
+  FF_SCRIPT_SECTIONS: 1
+
 
 # Ensure docker is working on the Gitlab runner
 default:
