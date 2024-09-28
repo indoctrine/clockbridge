@@ -51,8 +51,10 @@ config:
         assert isinstance(self.config.webhook_secrets, list)
         assert all(len(val) == self.webhook_secrets_len for val in self.config.webhook_secrets)
         assert isinstance(self.config.event_types, list) or isinstance(self.config.event_types, str)
+        assert isinstance(self.config.log_level, str) and self.config.log_level in ["DEBUG", "INFO", "WARN", "ERROR", "NOTSET"]
         assert isinstance(self.config.elastic_creds, dict)
         assert isinstance(self.config.elastic_creds['url'], pydantic_core._pydantic_core.Url)
         assert isinstance(self.config.elastic_creds['insecure'], bool)
         assert isinstance(self.config.elastic_creds['username'], str)
         assert isinstance(self.config.elastic_creds['password'], bytes)
+        assert isinstance(self.config.elastic_creds['index_prefix'], str) and self.config.elastic_creds['index_prefix'].isalnum
