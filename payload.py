@@ -7,9 +7,13 @@ PURPOSE:    This module handles validating the incoming payload for Clockbridge
 import json
 from typing import Optional
 from datetime import datetime, timedelta
+import sys
+import logging
 from typing_extensions import TypedDict
 from pydantic import BaseModel, ValidationError
 
+logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s',
+                    stream=sys.stderr,level=logging.INFO)
 
 class PayloadProjectSchema(TypedDict):
     """Validate the Project dictionary in payload"""
@@ -37,7 +41,8 @@ class Payload:
         try:
             self.data = json.loads(data)
         except json.JSONDecodeError as exc:
-            raise json.JSONDecodeError("Unable to parse payload") from exc
+            logging.exception("Unable to parse the payload")
+            raise json.JSONDecodeError from exc
 
     def validate_schema(self):
         """Validate the schema of the payload and ensure the duration matches start and end times"""
@@ -46,10 +51,12 @@ class Payload:
             self.data = schema.model_validate(self.data)
             delta = self.data.timeInterval['end'] - self.data.timeInterval['start']
             if delta != self.data.timeInterval['duration']:
+                logging.error("Error validating schema, payload is not in correct schema")
                 raise ValidationError
             self.data.timeInterval['start'] = self.data.timeInterval['start'].strftime('%Y-%m-%dT%H:%M:%S%z')
             self.data.timeInterval['end'] = self.data.timeInterval['end'].strftime('%Y-%m-%dT%H:%M:%S%z')
             self.data.timeInterval['duration'] = int(self.data.timeInterval['duration'].total_seconds())
+            logging.info("Schema validated")
             return True
         except ValidationError as exc:
-            raise ValueError("Payload is not in the expected schema") from exc
+            raise ValueError from exc

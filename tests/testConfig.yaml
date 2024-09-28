@@ -12,3 +12,5 @@ elastic_creds:
   insecure: true
   username: test
   password: dGVzdDEyMwo=
+  index_prefix: test
+log_level: DEBUG
