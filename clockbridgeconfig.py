@@ -6,8 +6,8 @@ PURPOSE:    This module handles loading and validating the configuration file fo
 import json
 import os
 import yaml
-from typing_extensions import TypedDict
-from pydantic import BaseModel, ValidationError, AnyHttpUrl, Base64Bytes
+from typing_extensions import TypedDict, Literal
+from pydantic import BaseModel, ValidationError, AnyHttpUrl, Base64Bytes, ValidationInfo, field_validator
 
 class ConfigCredsSchema(TypedDict):
     """Config credentials schema for pushing into Elastic"""
@@ -15,12 +15,21 @@ class ConfigCredsSchema(TypedDict):
     insecure: bool
     username: str
     password: Base64Bytes
+    index_prefix: str
+    @field_validator('index_prefix')
+    @classmethod
+    def check_alphanumeric(cls, v: str, info: ValidationInfo) -> str:
+        if isinstance(v, str):
+            is_alphanumeric = v.replace(' ', '').isalnum()
+            assert is_alphanumeric, f'{info.field_name} must be alphanumeric'
+        return v
 
 class ConfigSchema(BaseModel):
     """Schema for overall configuration file"""
     webhook_secrets: ( str | list[str] )
     event_types: ( str | list[str] )
     elastic_creds: ConfigCredsSchema
+    log_level: Literal["DEBUG", "INFO", "WARN", "ERROR"] = "NOTSET"
 
 class Config():
     """Singleton config class where the magic happens"""
