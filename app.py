@@ -45,7 +45,8 @@ def clockbridge():
         # From here on out is just kludge code to make this work because I'm bored of manually entering data
         urllib3.disable_warnings(category=urllib3.exceptions.InsecureRequestWarning)
         now = datetime.now().astimezone()
-        index_name = f"{config.elastic_creds['index_prefix']}-{now.strftime('%Y-%m')}"
+        dt_end = datetime.strptime(payload['timeInterval']['end'], "%Y-%m-%dT%H:%M:%S%z")
+        index_name = f"{config.elastic_creds['index_prefix']}-{dt_end.strftime('%Y-%m')}"
         payload['@timestamp'] = now.strftime('%Y-%m-%dT%H:%M:%S%z')
         pwd = config.elastic_creds['password'].decode().strip()
 
