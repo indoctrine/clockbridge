@@ -70,7 +70,7 @@ deploy-dev:
         docker rm -f clockbridge || true
         docker run -d -p 5000:5000 -v /docker-data/clockbridge:/config --restart always --name clockbridge $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
       fi
-    - '[ "$( curl -q http://${CI_DEPLOY_SERVER}:5000/ping )" = "Pong" ]'
+    - '[ "$( curl -q http://$CI_DEPLOY_SERVER:5000/ping )" = "Pong" ]'
   after_script:
     - docker rmi $(docker images -f dangling=true -f reference=$CI_REGISTRY_IMAGE -q)
   tags:
@@ -102,7 +102,7 @@ deploy-prod:
         docker rm -f clockbridge || true
         docker run -d -p 5000:5000 -v $CLOCKBRIDGE_CONFIG_DIR:/config --restart always --name clockbridge $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
       fi
-    - '[ "$( curl -q http://${CI_DEPLOY_SERVER}:5000/ping )" = "Pong" ]'
+    - '[ "$( curl -q http://$CI_DEPLOY_SERVER:5000/ping )" = "Pong" ]'
   after_script:
     - docker rmi $(docker images -f dangling=true -f reference=$CI_REGISTRY_IMAGE -q)
   tags:
