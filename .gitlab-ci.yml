@@ -70,7 +70,7 @@ deploy-dev:
         docker rm -f clockbridge || true
         docker run -d -p 5000:5000 -v /docker-data/clockbridge:/config --restart always --name clockbridge $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
       fi
-    - docker ps -a
+    - sleep 3 # Give the container time to initialise
     - >
       [ "$( curl -q ${CI_DEPLOY_SERVER}:5000/ping )" = "Pong" ]
   after_script:
@@ -104,6 +104,7 @@ deploy-prod:
         docker rm -f clockbridge || true
         docker run -d -p 5000:5000 -v $CLOCKBRIDGE_CONFIG_DIR:/config --restart always --name clockbridge $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
       fi
+    - sleep 3 # Give the container time to initialise
     - >
       [ "$( curl -q ${CI_DEPLOY_SERVER}:5000/ping )" = "Pong" ]
   after_script:
