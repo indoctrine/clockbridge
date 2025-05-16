@@ -3,7 +3,7 @@ AUTHOR:     Beck D.
 DATE:       2023-
 PURPOSE:    This module handles loading and validating the configuration file for Clockbridge
 """
-import json
+
 import os
 import yaml
 from typing_extensions import TypedDict, Literal
@@ -44,8 +44,7 @@ class Config():
                 if f.readable():
                     verified_config = self.__parse_config_file(f)
                     return verified_config
-                else:
-                    raise IOError(f"{config_file_path} cannot be opened for reading")
+                raise IOError(f"{config_file_path} cannot be opened for reading")
         else:
             raise PermissionError(f"{config_file_path} cannot be opened for reading")
 
@@ -71,7 +70,4 @@ class Config():
     def __validate_args_length(self, args: list, expected_length: int):
         if isinstance(args, str):
             args = [ args ]
-        if all(len(arg) == expected_length for arg in args):
-            return True
-        else:
-            return False
+        return (all(len(arg) == expected_length for arg in args))
