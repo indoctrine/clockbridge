@@ -10,6 +10,7 @@ class Webhook:
     """Overarching class where the magic happens"""
     def __init__(self, config):
         self.config = config
+        self.action = None
 
     def verify_incoming_webhook(self, headers, payload):
         """Verify signature and payload"""
@@ -29,7 +30,7 @@ class Webhook:
         else:
             return False
 
-        if (headers['clockify-signature'] in self.config.webhook_secrets and 
+        if (headers['clockify-signature'] in self.config.webhook_secrets and
             headers['clockify-webhook-event-type'].casefold() in self.config.event_types):
             self.action = headers['clockify-webhook-event-type']
             return True
