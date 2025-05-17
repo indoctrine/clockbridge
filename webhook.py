@@ -4,6 +4,8 @@ DATE:       2023-
 PURPOSE:    This module handles validating the incoming payload for Clockbridge
 """
 
+import logging
+import sys
 from payload import Payload
 
 class Webhook:
@@ -12,9 +14,14 @@ class Webhook:
         self.config = config
         self.action = None
 
-    def verify_incoming_webhook(self, headers, payload):
+        logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s',
+                    stream=sys.stderr,level=f"logging.{self.config.log_level}")
+
+    def verify_incoming_webhook(self, payload):
         """Verify signature and payload"""
-        verify_payload = self.verify_payload(payload)
+        headers = payload.headers
+        data = payload.data
+        verify_payload = self.verify_payload(data)
         if self.verify_signature(headers) and verify_payload:
             return verify_payload
         return False
@@ -26,6 +33,7 @@ class Webhook:
         if headers:
             missing_headers = set(expected_keys).difference(headers.keys())
             if missing_headers:
+                logging.debug("Required headers are missing!")
                 return False
         else:
             return False
@@ -33,6 +41,7 @@ class Webhook:
         if (headers['clockify-signature'] in self.config.webhook_secrets and
             headers['clockify-webhook-event-type'].casefold() in self.config.event_types):
             self.action = headers['clockify-webhook-event-type']
+            logging.debug("All expected headers are present, continuing...")
             return True
         return False
 
@@ -40,6 +49,7 @@ class Webhook:
         """Normalise (Casefold) the headers so that they can be validated"""
         try:
             headers = dict(request_headers)
+            logging.debug("Forcing headers to lowercase")
             for header_key, header in dict(request_headers).items():
                 headers[header_key.casefold()] = header
                 headers.pop(header_key)
