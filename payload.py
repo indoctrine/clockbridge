@@ -48,15 +48,18 @@ class Payload:
         """Validate the schema of the payload and ensure the duration matches start and end times"""
         try:
             schema = PayloadSchema
+            logging.debug("Validating schema of payload...")
             self.data = schema.model_validate(self.data)
             delta = self.data.timeInterval['end'] - self.data.timeInterval['start']
             if delta != self.data.timeInterval['duration']:
                 logging.error("Error validating schema, payload is not in correct schema")
                 raise ValidationError
+            logging.debug("Normalising dates in payload...")
             self.data.timeInterval['start'] = self.data.timeInterval['start'].strftime('%Y-%m-%dT%H:%M:%S%z')
             self.data.timeInterval['end'] = self.data.timeInterval['end'].strftime('%Y-%m-%dT%H:%M:%S%z')
             self.data.timeInterval['duration'] = int(self.data.timeInterval['duration'].total_seconds())
-            logging.info("Schema validated")
+            logging.info("Schema validated successfully")
             return True
         except ValidationError as exc:
+            logging.exception(exc)
             raise ValueError from exc
