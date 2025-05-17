@@ -9,6 +9,7 @@ from datetime import datetime
 import sys
 import logging
 import requests
+import urllib3
 
 logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s',
                     stream=sys.stderr,level=logging.INFO)
@@ -23,6 +24,8 @@ class Elastic:
         self.pwd = config['password'].decode().strip()
         self.hc_url = f"{self.base_url}_cluster/health"
         self.insecure = config['insecure']
+        if self.insecure:
+            urllib3.disable_warnings(category=urllib3.exceptions.InsecureRequestWarning)
 
     def health_check(self, timeout=50):
         """Health check the Elastic endpoint"""
