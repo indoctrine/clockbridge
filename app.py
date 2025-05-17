@@ -41,7 +41,10 @@ def clockbridge():
         hook = webhook.Webhook(config)
         logger.debug("Payload received with headers:\n %s", dict(request.headers))
         logger.debug("Payload contents:\n %s", json.dumps(request.json, indent=4))
-        payload = hook.verify_incoming_webhook(request.headers, request.data)
+        if request.json['timeInterval']['end'] is None:
+            return Response("Payload not ready for upload", 409)
+
+        payload = hook.verify_incoming_webhook(request)
         if not payload:
             return Response("Unauthorized", 403)
 
