@@ -29,7 +29,7 @@ class PayloadTimeSchema(TypedDict):
 
 class PayloadSchema(BaseModel):
     """Validate the Payload schema"""
-    description: str
+    description: Optional[str]
     id: str
     project: Optional[PayloadProjectSchema]
     projectId: Optional[str]
