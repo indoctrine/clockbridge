@@ -69,7 +69,10 @@ class TestVerifyWebhookPayload:
                 "end": "",
                 "start": ""
             },
-            "userId": ""
+            "userId": "",
+            "task": {
+                "name": ""
+            }
         }
         """
         self.payload = json.loads(json_data)
