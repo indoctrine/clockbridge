@@ -27,6 +27,10 @@ class PayloadTimeSchema(TypedDict):
     end: datetime
     start: datetime
 
+class PayloadTaskSchema(TypedDict):
+    """Validate the Task dictionary in payload"""
+    name: str
+
 class PayloadSchema(BaseModel):
     """Validate the Payload schema"""
     description: Optional[str]
@@ -34,6 +38,7 @@ class PayloadSchema(BaseModel):
     project: Optional[PayloadProjectSchema]
     projectId: Optional[str]
     timeInterval: PayloadTimeSchema
+    task: PayloadTaskSchema
 
 class Payload:
     """Payload class"""
