@@ -8,6 +8,7 @@ import os
 import sys
 import logging
 import json
+import time
 from datetime import datetime
 from queue import Queue
 from clockbridgeconfig import Config
@@ -25,6 +26,7 @@ logging.info("Configuration loaded from %s, logging at %s level", file_path, con
 job_queue = Queue(maxsize=100)
 es = Elastic(config.elastic_creds)
 
+logging.Formatter.converter = time.localtime
 logger = logging.getLogger(__name__)
 logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s',
                     stream=sys.stderr)
