@@ -7,7 +7,8 @@ services:
       - /opt/clockbridge:/clockbridge
     ports:      
       - "8080:8080"
-
+    environment:
+      - WEB_CONCURRENCY=4
   proxy:
     build: nginx
     restart: always
