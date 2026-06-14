@@ -12,7 +12,7 @@ class TestCreateEntryRoute:
 
     def _valid_body(self):
         return {
-            "description": "Kerioth",
+            "description": "Test",
             "start": "2024-06-11T13:02:00Z",
             "end": "2024-06-11T13:59:00Z",
         }
