@@ -51,6 +51,13 @@ class Config():
     def __parse_config_file(self, config_file):
         try:
             config = yaml.safe_load(config_file)
+
+            # Add ability to include ES password over envvar
+            es_password = os.environ.get("ES_PASSWORD")
+            if es_password and "elastic_creds" in config:
+              config["elastic_creds"]["password"] = base64.b64encode(
+                    es_password.encode()
+                ).decode()
             schema = ConfigSchema
             validated_config = schema.model_validate(config)
 
