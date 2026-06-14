@@ -7,6 +7,7 @@ PURPOSE:    This module handles loading and validating the configuration file fo
 import os
 import yaml
 from typing_extensions import TypedDict, Literal
+import base64
 from pydantic import BaseModel, ValidationError, AnyHttpUrl, Base64Bytes, ValidationInfo, field_validator
 
 class ConfigCredsSchema(TypedDict):
