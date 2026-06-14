@@ -9,10 +9,12 @@ import sys
 import logging
 import json
 import time
+import uuid
 from datetime import datetime
 from queue import Queue
 from clockbridgeconfig import Config
 from elastic import Elastic
+from payload import Payload
 import webhook
 from flask import Flask, Response, request
 
@@ -31,6 +33,14 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s',
                     stream=sys.stderr)
 logger.setLevel(config.log_level)
+
+# Maps Clockify webhook event types to the generic action verbs understood by
+# Elastic.push(). Anything not listed here (NEW_TIME_ENTRY, TIMER_STOPPED, ...)
+# is treated as a create.
+CLOCKIFY_ACTION_MAP = {
+    "TIME_ENTRY_DELETED": "delete",
+    "TIME_ENTRY_UPDATED": "update",
+}
 
 @app.route("/ping", methods = ['GET'])
 def ping():
@@ -62,12 +72,8 @@ def clockbridge():
             logger.info("Elasticsearch endpoint up, pushing data...")
             for job in range(job_queue.qsize()):
                 data = job_queue.get(job)
-                if hook.action == "TIME_ENTRY_DELETED":
-                    r = es.delete_doc(data)
-                elif hook.action == "TIME_ENTRY_UPDATED":
-                    r = es.update_doc(data)
-                else:
-                    r = es.create_doc(data)
+                verb = CLOCKIFY_ACTION_MAP.get((hook.action or "").upper(), "create")
+                r = es.push(data, verb)
 
                 if not r:
                     # If the task above doesn't complete successfully, put the job back in the queue
@@ -75,6 +81,90 @@ def clockbridge():
             return Response("Data successfully inserted into Elasticsearch", 200)
     except Exception:
         return Response(503)
+
+def build_entry(body):
+    """Build a canonical, Clockify-shaped entry dict from frontend input.
+
+    Used by non-Clockify entries. Creates a custom document id and computes 
+    duration server-side from start/end with client-supplied duration being ignored. 
+    The optional fields are included explicitly as None because the schema treats them as 
+    required-but-nullable.
+    
+    Raises ValueError on missing/invalid input; full schema validation and
+    date/duration normalisation happen downstream in Payload.validate_schema().
+    """
+    if not isinstance(body, dict):
+        raise ValueError("Request body must be a JSON object")
+
+    start = body.get("start")
+    end = body.get("end")
+    if not start or not end:
+        raise ValueError("Both 'start' and 'end' are required")
+
+    try:
+        start_dt = datetime.fromisoformat(str(start).replace("Z", "+00:00"))
+        end_dt = datetime.fromisoformat(str(end).replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError("'start' and 'end' must be ISO 8601 timestamps") from exc
+
+    if end_dt <= start_dt:
+        raise ValueError("'end' must be after 'start'")
+
+    return {
+        "id": str(uuid.uuid4()),
+        "description": body.get("description"),
+        "project": body.get("project"),
+        "projectId": body.get("projectId"),
+        "task": body.get("task"),
+        "timeInterval": {
+            "start": start,
+            "end": end,
+            "duration": int((end_dt - start_dt).total_seconds()),
+        },
+    }
+
+@app.route("/api/entries", methods = ['POST'])
+def create_entry():
+    """Create a completed time entry from the frontend (manual entry / timer stop).
+
+    Unlike /webhook/clockify, this endpoint is authenticated upstream (session
+    or ingress), so it does not verify a Clockify signature -- it is a trusted
+    internal producer. It mints its own document id, validates against the same
+    schema as the webhook via Payload, then pushes through the shared es.push().
+    On an Elasticsearch failure it returns an error so the caller can retry,
+    rather than enqueuing onto the per-worker webhook queue.
+    """
+    body = request.get_json(silent=True)
+    if body is None:
+        return Response("Malformed or missing JSON body", 400)
+
+    try:
+        entry = build_entry(body)
+        payload = Payload(json.dumps(entry))
+        payload.validate_schema()
+        validated = dict(payload.data)
+    # Payload raises ValueError on a bad schema; the duration-mismatch guard
+    # surfaces as TypeError. We construct duration ourselves so the latter is
+    # effectively unreachable, but we catch it defensively.
+    except (ValueError, TypeError) as exc:
+        logger.info("Rejected manual entry: %s", exc)
+        return Response(f"Invalid entry: {exc}", 400)
+
+    now = datetime.now().astimezone()
+    validated['@timestamp'] = now.strftime('%Y-%m-%dT%H:%M:%S%z')
+
+    try:
+        if not es.health_check():
+            return Response("Elasticsearch unavailable", 503)
+        if not es.push(validated, "create"):
+            return Response("Failed to insert entry into Elasticsearch", 502)
+    except Exception:
+        logger.exception("Error pushing manual entry to Elasticsearch")
+        return Response("Elasticsearch unavailable", 503)
+
+    logger.info("Created manual entry %s", validated["id"])
+    return Response(json.dumps({"id": validated["id"]}),
+                    status=201, mimetype="application/json")
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000, host='0.0.0.0')

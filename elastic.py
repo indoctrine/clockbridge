@@ -45,6 +45,19 @@ class Elastic:
         dt_end = datetime.strptime(end_date, "%Y-%m-%dT%H:%M:%S%z")
         self.index = f"{self.index_prefix}-{dt_end.strftime('%Y-%m')}"
 
+    def push(self, data, action="create"):
+        """
+        Submit a single entry to Elasticsearch endpoint by action verb.
+
+        action is one of "create", "update" or "delete"; any other value
+        falls back to "create". Returns the underlying method's result.
+        """
+        if action == "delete":
+            return self.delete_doc(data)
+        if action == "update":
+            return self.update_doc(data)
+        return self.create_doc(data)
+
     def delete_doc(self, data, action="delete"):
         """Delete document in Elastic by document ID"""
         try:
@@ -60,15 +73,18 @@ class Elastic:
                 return True
 
             if r.status_code == 404 and action == "update":
-                logging.info("Document does not currently exist, but will be created by update action")
+                logging.info("Document does not exist, but will be created by update action")
                 return True
 
             raise requests.exceptions.HTTPError(r.content)
         except Exception as e:
             logging.exception("Unable to delete document from Elasticsearch\n %s", e)
+            return False
 
     def create_doc(self, data):
-        """Create document in Elastic with custom document ID from payload"""
+        """
+        Create document in Elastic with custom document ID from payload
+        """
         try:
             self.gen_index_date(data['timeInterval']['end'])
             r = requests.post(f"{self.base_url}{self.index}/_create/{data['id']}",
@@ -88,7 +104,10 @@ class Elastic:
             return False
 
     def update_doc(self, data):
-        """Update document in Elastic by deleting the document and recreating it with the new data"""
+        """
+        Update document in Elastic by deleting the document and recreating it 
+        with the new data, selected by ID
+        """
         try:
             self.delete_doc(data, "update")
             self.create_doc(data)
