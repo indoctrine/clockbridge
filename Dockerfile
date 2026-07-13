@@ -12,7 +12,8 @@ RUN pip install --upgrade pip setuptools wheel \
 
 COPY . .
 
-RUN useradd -ms /bin/bash clockbridge
+RUN useradd -m -s /bin/bash clockbridge
+RUN chown -R clockbridge:clockbridge $(pwd)
 USER clockbridge
 
 EXPOSE 5000
