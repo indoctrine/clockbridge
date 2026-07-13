@@ -14,7 +14,6 @@ atomically reschedules each row it hands out, so a given row is worked by
 exactly one worker per tick.
 """
 
-import json
 import logging
 import threading
 from datetime import datetime
@@ -55,7 +54,7 @@ class Flusher:
             try:
                 self.tick()
             except Exception:
-                # A thrown exception must not kill the thread -- the whole point
+                # A thrown exception must not kill the thread, the whole point
                 # of this loop is durable retry. Log and continue.
                 logger.exception("Flusher tick raised; continuing")
             # wait() returns True if the event was set, letting stop() short-circuit sleep.
@@ -73,8 +72,8 @@ class Flusher:
         if not claimed:
             return
 
-        # One health check per batch rather than per row. If ES is not green
-        # we don't try any pushes this tick -- but claim_due has already
+        # One health check per batch rather than per row. If ES is not green,
+        # we don't try any pushes this tick but claim_due has already
         # advanced next_retry_at, so we'll try again after the backoff.
         try:
             healthy = self.es.health_check()
