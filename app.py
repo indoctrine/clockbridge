@@ -12,11 +12,14 @@ import time
 import uuid
 from datetime import datetime
 from queue import Queue
-from clockbridgeconfig import Config
+from flask import Flask, Response, request
+from timer_store import TimerStore
+from timers import timers_bp
+from flusher import Flusher
 from elastic import Elastic
 from payload import Payload
 import webhook
-from flask import Flask, Response, request
+from clockbridgeconfig import Config
 
 file_path = os.environ.get('CLOCKBRIDGE_CONFIG_PATH')
 if not file_path:
@@ -27,6 +30,20 @@ config = Config(file_path)
 logging.info("Configuration loaded from %s, logging at %s level", file_path, config.log_level)
 job_queue = Queue(maxsize=100)
 es = Elastic(config.elastic_creds)
+
+# Timer state store + retry loop. The store is shared across gunicorn workers
+# via the SQLite file at config.sqlite_path; each worker gets its own Flusher
+# thread, and TimerStore.claim_due is atomic so a given pending_flush row is
+# handed to exactly one worker per tick.
+timer_store = TimerStore(config.sqlite_path)
+app.config["TIMER_STORE"] = timer_store
+app.config["ES"] = es
+app.register_blueprint(timers_bp)
+
+flusher = Flusher(timer_store, es)
+
+if not os.environ.get("CLOCKBRIDGE_DISABLE_FLUSHER"):
+    flusher.start()
 
 logging.Formatter.converter = time.localtime
 logger = logging.getLogger(__name__)

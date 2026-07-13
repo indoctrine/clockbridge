@@ -31,6 +31,10 @@ class ConfigSchema(BaseModel):
     event_types: ( str | list[str] )
     elastic_creds: ConfigCredsSchema
     log_level: Literal["DEBUG", "INFO", "WARN", "ERROR"] = "NOTSET"
+    # Path to the SQLite file backing running timers and the pending_flush retry
+    # queue. Defaults to a file in the CWD for local dev; in K8s point this at a
+    # PVC-mounted path (and keep replicas=1 so there is one writer).
+    sqlite_path: str = "timers.db"
 
 class Config():
     """Singleton config class where the magic happens"""

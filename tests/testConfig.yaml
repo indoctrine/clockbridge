@@ -14,3 +14,4 @@ elastic_creds:
   password: dGVzdDEyMwo=
   index_prefix: test
 log_level: DEBUG
+sqlite_path: ":memory:" # Store DB in-mem
