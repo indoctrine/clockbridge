@@ -163,11 +163,23 @@ function stopTicker() {
 }
 
 function summariseEntry(e) {
-  const bits = [
-    e.description || "(no description)",
-    e.project?.clientName, e.project?.name, e.task?.name,
-  ].filter(Boolean);
-  return bits.join(" · ");
+  // Plain-text version used for the running-timer summary and hover titles.
+  const desc = e.description || "(no description)";
+  const meta = [e.project?.clientName, e.project?.name, e.task?.name].filter(Boolean);
+  return meta.length ? `${desc} — ${meta.join(" · ")}` : desc;
+}
+
+function renderEntryInto(node, e) {
+  // DOM version used for recent-entry list items so we can bold the
+  // description without HTML-escaping the metadata by hand.
+  node.textContent = "";
+  const strong = document.createElement("strong");
+  strong.textContent = e.description || "(no description)";
+  node.appendChild(strong);
+  const meta = [e.project?.clientName, e.project?.name, e.task?.name].filter(Boolean);
+  if (meta.length) {
+    node.appendChild(document.createTextNode(` — ${meta.join(" · ")}`));
+  }
 }
 
 function renderRunning() {
@@ -226,7 +238,7 @@ function applyMode() {
 function prependRecent(entry) {
   const ul = $("recent-list");
   const li = document.createElement("li");
-  li.textContent = summariseEntry(entry);
+  renderEntryInto(li, entry);
   li.title = "Click to fill the form from this entry";
   li.addEventListener("click", () => fillFromEntry(entry));
   ul.insertBefore(li, ul.firstChild);
@@ -306,7 +318,7 @@ async function loadRecent(reset = false) {
   const ul = $("recent-list");
   for (const e of entries) {
     const li = document.createElement("li");
-    li.textContent = summariseEntry(e);
+    renderEntryInto(li, e);
     li.title = "Click to fill the form from this entry";
     li.addEventListener("click", () => fillFromEntry(e));
     ul.appendChild(li);
