@@ -12,7 +12,7 @@ import time
 import uuid
 from datetime import datetime
 from queue import Queue
-from flask import Flask, Response, request
+from flask import Flask, Response, render_template, request
 from timer_store import TimerStore
 from timers import timers_bp
 from flusher import Flusher
@@ -182,6 +182,51 @@ def create_entry():
     logger.info("Created manual entry %s", validated["id"])
     return Response(json.dumps({"id": validated["id"]}),
                     status=201, mimetype="application/json")
+
+def _json_response(body, status=200):
+    return Response(json.dumps(body, default=str),
+                    status=status, mimetype="application/json")
+
+@app.route("/", methods=["GET"])
+def index():
+    return render_template("index.html")
+
+@app.route("/api/clients", methods=["GET"])
+def list_clients():
+    try:
+        return _json_response(es.distinct_clients())
+    except Exception:
+        logger.exception("Failed listing clients")
+        return Response("Elasticsearch unavailable", 503)
+
+@app.route("/api/projects", methods=["GET"])
+def list_projects():
+    try:
+        return _json_response(es.distinct_projects(request.args.get("client")))
+    except Exception:
+        logger.exception("Failed listing projects")
+        return Response("Elasticsearch unavailable", 503)
+
+@app.route("/api/tasks", methods=["GET"])
+def list_tasks():
+    try:
+        return _json_response(es.distinct_tasks(request.args.get("project")))
+    except Exception:
+        logger.exception("Failed listing tasks")
+        return Response("Elasticsearch unavailable", 503)
+
+@app.route("/api/entries/recent", methods=["GET"])
+def list_recent_entries():
+    try:
+        limit = max(1, min(int(request.args.get("limit", 10)), 100))
+        offset = max(0, int(request.args.get("offset", 0)))
+    except ValueError:
+        return Response("limit and offset must be integers", 400)
+    try:
+        return _json_response(es.recent_entries(limit, offset))
+    except Exception:
+        logger.exception("Failed listing recent entries")
+        return Response("Elasticsearch unavailable", 503)
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000, host='0.0.0.0')

@@ -126,7 +126,7 @@ class TimerStore:
 
     # ---- lifecycle ---------------------------------------------------------
 
-    def start(self, description=None, project=None, project_id=None, task=None):
+    def start(self, description=None, project=None, project_id=None, task=None, start=None):
         """Start a new running timer.
 
         If a timer is already running, that row is transitioned to pending_flush
@@ -136,12 +136,15 @@ class TimerStore:
         in one transaction, so a crash mid-call can't leave you with two running
         timers or zero.
 
+        `start` may be an aware datetime to backdate the timer (e.g. the user
+        forgot to press start half an hour ago); if None the server clock is used.
+
         Returns {"started": <new_timer>, "stopped": <prev_or_None>}. The caller
         can attempt a synchronous push of `stopped` for lower latency, but is
         not required to -- the flusher will handle it either way.
         """
         new_id = str(uuid.uuid4())
-        start_ts = _iso(_now_utc())
+        start_ts = _iso(start) if start is not None else _iso(_now_utc())
         new_entry = self._running_entry(new_id, description, project, project_id, task)
 
         with self._tx() as c:

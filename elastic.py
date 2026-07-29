@@ -103,6 +103,77 @@ class Elastic:
             logging.exception("Unable to create document in Elasticsearch\n %s", e)
             return False
 
+    def _search(self, body):
+        r = requests.post(f"{self.base_url}{self.index_prefix}-*/_search",
+                          data=json.dumps(body),
+                          auth=(self.user, self.pwd),
+                          verify=not self.insecure,
+                          headers={"Content-Type": "application/json"},
+                          timeout=10)
+        r.raise_for_status()
+        return r.json()
+
+    def recent_entries(self, limit=10, offset=0):
+        """Return the most recent completed entries across all monthly indices."""
+        body = {
+            "size": limit,
+            "from": offset,
+            "sort": [{"timeInterval.end": {"order": "desc"}}],
+            "_source": ["id", "description", "project", "projectId",
+                        "task", "timeInterval", "@timestamp"],
+        }
+        hits = self._search(body).get("hits", {}).get("hits", [])
+        return [h["_source"] for h in hits]
+
+    def distinct_clients(self):
+        """Distinct (clientId, clientName) pairs seen in indexed entries."""
+        body = {
+            "size": 0,
+            "query": {"exists": {"field": "project.clientId"}},
+            "aggs": {"clients": {"multi_terms": {"terms": [
+                {"field": "project.clientId.keyword"},
+                {"field": "project.clientName.keyword"},
+            ], "size": 200}}},
+        }
+        buckets = self._search(body).get("aggregations", {}) \
+                                    .get("clients", {}).get("buckets", [])
+        return [{"clientId": b["key"][0], "clientName": b["key"][1]} for b in buckets]
+
+    def distinct_projects(self, client_id=None):
+        """Distinct projects; optionally scoped to a client."""
+        filters = [{"exists": {"field": "projectId"}}]
+        if client_id:
+            filters.append({"term": {"project.clientId.keyword": client_id}})
+        body = {
+            "size": 0,
+            "query": {"bool": {"filter": filters}},
+            "aggs": {"projects": {"multi_terms": {"terms": [
+                {"field": "projectId.keyword"},
+                {"field": "project.name.keyword"},
+                {"field": "project.clientId.keyword"},
+                {"field": "project.clientName.keyword"},
+            ], "size": 500}}},
+        }
+        buckets = self._search(body).get("aggregations", {}) \
+                                    .get("projects", {}).get("buckets", [])
+        return [{"projectId": b["key"][0], "name": b["key"][1],
+                 "clientId": b["key"][2], "clientName": b["key"][3]}
+                for b in buckets]
+
+    def distinct_tasks(self, project_id=None):
+        """Distinct task names; optionally scoped to a project."""
+        filters = [{"exists": {"field": "task.name"}}]
+        if project_id:
+            filters.append({"term": {"projectId.keyword": project_id}})
+        body = {
+            "size": 0,
+            "query": {"bool": {"filter": filters}},
+            "aggs": {"tasks": {"terms": {"field": "task.name.keyword", "size": 500}}},
+        }
+        buckets = self._search(body).get("aggregations", {}) \
+                                    .get("tasks", {}).get("buckets", [])
+        return [{"name": b["key"]} for b in buckets]
+
     def update_doc(self, data):
         """
         Update document in Elastic by deleting the document and recreating it 

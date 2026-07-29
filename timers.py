@@ -83,12 +83,23 @@ def start_timer():
     if not isinstance(body, dict):
         return Response("Malformed or missing JSON body", 400)
 
+    start_str = body.get("start")
+    start_dt = None
+    if start_str:
+        try:
+            start_dt = datetime.fromisoformat(str(start_str).replace("Z", "+00:00"))
+        except ValueError:
+            return Response("'start' must be an ISO 8601 timestamp", 400)
+        if start_dt.tzinfo is None:
+            return Response("'start' must include a timezone offset", 400)
+
     try:
         result = _store().start(
             description=body.get("description"),
             project=body.get("project"),
             project_id=body.get("projectId"),
             task=body.get("task"),
+            start=start_dt,
         )
     except ConflictError as exc:
         # The atomic auto-stop in start() should make this unreachable in

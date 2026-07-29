@@ -162,3 +162,22 @@ class TestDatabaseLevelInvariant:
                 "INSERT INTO timers(id, start, status, entry) "
                 "VALUES('duplicate', '2026-01-01T00:00:00+0000', 'running', '{}')"
             )
+
+
+class TestBackdatedStart:
+    """`start` accepts an override datetime so users can back-date a timer
+    they forgot to press start on."""
+
+    def test_start_uses_override_when_provided(self, store):
+        from datetime import datetime, timezone, timedelta
+        past = datetime.now(timezone.utc) - timedelta(minutes=30)
+        started = store.start(description="backdated", start=past)["started"]
+        # Stored `start` is second-precision ISO; compare formatted
+        assert started["start"].startswith(past.strftime("%Y-%m-%dT%H:%M"))
+
+    def test_start_uses_server_now_when_omitted(self, store):
+        from datetime import datetime, timezone
+        before = datetime.now(timezone.utc)
+        started = store.start(description="server-clock")["started"]
+        parsed = datetime.strptime(started["start"], "%Y-%m-%dT%H:%M:%S%z")
+        assert (parsed - before).total_seconds() < 5
