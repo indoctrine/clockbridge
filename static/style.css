@@ -21,7 +21,17 @@ main {
   margin: 0 auto;
   padding: 1.5rem 1rem 4rem;
 }
+main.login { max-width: 360px; padding-top: 6rem; }
+main.login form { gap: 1rem; }
 h1 { margin: 0 0 1rem; font-size: 1.4rem; }
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+.app-header h1 { margin: 0; }
+.logout-form { margin: 0; }
 h2 { margin: 0 0 0.5rem; font-size: 1rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
 section {
   background: var(--panel);
@@ -56,7 +66,7 @@ section {
 .mode-option:not(.is-active):hover { color: var(--text); }
 form { display: flex; flex-direction: column; gap: 0.75rem; }
 label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.85rem; color: var(--muted); }
-input[type="text"], input[list], input[type="datetime-local"] {
+input[type="text"], input[list], input[type="datetime-local"], input[type="password"] {
   background: var(--bg);
   color: var(--text);
   border: 1px solid var(--border);

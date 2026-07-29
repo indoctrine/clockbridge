@@ -11,11 +11,40 @@ const state = {
   recentPageSize: 10,
 };
 
+// Session-lifetime cache for the cascade dropdowns. Reads dominate this
+// app's traffic; without caching every keystroke committed to a combobox
+// re-hits ES. Invalidated whenever we submit an entry that could add a
+// new client/project/task.
+const cache = {
+  clients: null,
+  projects: new Map(),  // key: clientId or "__all__"
+  tasks: new Map(),     // key: projectId or "__all__"
+};
+
+function invalidateLookupCache() {
+  cache.clients = null;
+  cache.projects.clear();
+  cache.tasks.clear();
+}
+
+function csrfToken() {
+  return document.querySelector('meta[name="csrf-token"]')?.content || "";
+}
+
 async function api(path, opts = {}) {
-  const r = await fetch(path, {
-    headers: { "Content-Type": "application/json" },
-    ...opts,
-  });
+  const method = (opts.method || "GET").toUpperCase();
+  const headers = { "Content-Type": "application/json", ...(opts.headers || {}) };
+  if (!["GET", "HEAD", "OPTIONS"].includes(method)) {
+    const t = csrfToken();
+    if (t) headers["X-CSRF-Token"] = t;
+  }
+  const r = await fetch(path, { ...opts, headers });
+  if (r.status === 401) {
+    // Session expired or missing; bounce to login preserving return path.
+    const next = encodeURIComponent(window.location.pathname);
+    window.location.href = `/login?next=${next}`;
+    throw new Error("Redirecting to login");
+  }
   if (r.status === 204) return null;
   if (!r.ok) {
     const msg = await r.text().catch(() => r.statusText);
@@ -40,7 +69,10 @@ function fillDatalist(id, items, labelFn) {
 }
 
 async function loadClients() {
-  state.clients = await api("/api/clients").catch(() => []);
+  if (cache.clients === null) {
+    cache.clients = await api("/api/clients").catch(() => []);
+  }
+  state.clients = cache.clients;
   fillDatalist("clients-list", state.clients, (c) => c.clientName);
 }
 
@@ -48,11 +80,14 @@ async function loadProjects() {
   const clientName = $("client-input").value.trim();
   const client = state.clients.find((c) => c.clientName === clientName);
   if (clientName && !client) {
-    // Unknown client: no known children, don't fall through to the unfiltered list.
     state.projects = [];
   } else {
-    const qs = client ? `?client=${encodeURIComponent(client.clientId)}` : "";
-    state.projects = await api(`/api/projects${qs}`).catch(() => []);
+    const key = client ? client.clientId : "__all__";
+    if (!cache.projects.has(key)) {
+      const qs = client ? `?client=${encodeURIComponent(client.clientId)}` : "";
+      cache.projects.set(key, await api(`/api/projects${qs}`).catch(() => []));
+    }
+    state.projects = cache.projects.get(key);
   }
   fillDatalist("projects-list", state.projects, (p) => p.name);
 }
@@ -63,8 +98,12 @@ async function loadTasks() {
   if (projectName && !project) {
     state.tasks = [];
   } else {
-    const qs = project ? `?project=${encodeURIComponent(project.projectId)}` : "";
-    state.tasks = await api(`/api/tasks${qs}`).catch(() => []);
+    const key = project ? project.projectId : "__all__";
+    if (!cache.tasks.has(key)) {
+      const qs = project ? `?project=${encodeURIComponent(project.projectId)}` : "";
+      cache.tasks.set(key, await api(`/api/tasks${qs}`).catch(() => []));
+    }
+    state.tasks = cache.tasks.get(key);
   }
   fillDatalist("tasks-list", state.tasks, (t) => t.name);
 }
@@ -188,7 +227,7 @@ function prependRecent(entry) {
   const ul = $("recent-list");
   const li = document.createElement("li");
   li.textContent = summariseEntry(entry);
-  li.title = "Click to prefill form";
+  li.title = "Click to fill the form from this entry";
   li.addEventListener("click", () => fillFromEntry(entry));
   ul.insertBefore(li, ul.firstChild);
   state.recentOffset += 1;
@@ -205,7 +244,10 @@ async function submitForm(e) {
       const startIso = toIsoWithOffset($("start-input").value);
       const body = startIso ? { ...base, start: startIso } : base;
       const r = await api("/api/timers", { method: "POST", body: JSON.stringify(body) });
-      if (r.stopped?.timeInterval) prependRecent(r.stopped);
+      if (r.stopped?.timeInterval) {
+        prependRecent(r.stopped);
+        invalidateLookupCache();
+      }
       state.running = r.started;
       renderRunning();
     } else {
@@ -222,6 +264,7 @@ async function submitForm(e) {
         task: base.task,
         timeInterval: { start: body.start, end: body.end },
       });
+      invalidateLookupCache();
       $("description-input").value = "";
     }
   } catch (ex) {
@@ -236,7 +279,10 @@ async function stopRunning() {
     const r = await api(`/api/timers/${state.running.id}/stop`, { method: "POST" });
     // 201 returns the entry directly; 202 wraps it as { id, status, entry }.
     const entry = r?.entry || r;
-    if (entry?.timeInterval) prependRecent(entry);
+    if (entry?.timeInterval) {
+      prependRecent(entry);
+      invalidateLookupCache();
+    }
   } catch {}
   state.running = null;
   renderRunning();
@@ -261,7 +307,7 @@ async function loadRecent(reset = false) {
   for (const e of entries) {
     const li = document.createElement("li");
     li.textContent = summariseEntry(e);
-    li.title = "Click to prefill form";
+    li.title = "Click to fill the form from this entry";
     li.addEventListener("click", () => fillFromEntry(e));
     ul.appendChild(li);
   }

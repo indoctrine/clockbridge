@@ -1,25 +1,5 @@
 """Tests for the frontend-facing lookup endpoints (clients/projects/tasks/recent)."""
 import json
-import pytest
-from unittest.mock import MagicMock
-from app import app as flask_app
-
-
-@pytest.fixture
-def es_mock():
-    original = flask_app.config.get("ES")
-    mock = MagicMock()
-    flask_app.config["ES"] = mock
-    # The routes reference the module-level `es`, not app.config["ES"], so
-    # patch that too by swapping the attribute in app.
-    import app as app_module
-    original_module_es = app_module.es
-    app_module.es = mock
-    try:
-        yield mock
-    finally:
-        flask_app.config["ES"] = original
-        app_module.es = original_module_es
 
 
 class TestClientsRoute:

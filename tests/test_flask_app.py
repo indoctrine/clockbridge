@@ -32,3 +32,20 @@ class TestRoutes:
         res = client.post('/webhook/clockify', data="testingtesting")
         expected = 415
         assert res.status_code == expected
+
+
+class TestRobotsExclusion:
+    def test_robots_txt_disallows_everything(self, client):
+        r = client.get("/robots.txt")
+        assert r.status_code == 200
+        assert r.mimetype == "text/plain"
+        assert b"User-agent: *" in r.data
+        assert b"Disallow: /" in r.data
+
+    def test_x_robots_tag_on_index(self, client):
+        r = client.get("/")
+        assert "noindex" in r.headers.get("X-Robots-Tag", "")
+
+    def test_x_robots_tag_on_api(self, client):
+        r = client.get("/ping")
+        assert "noindex" in r.headers.get("X-Robots-Tag", "")

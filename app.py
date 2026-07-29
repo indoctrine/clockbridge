@@ -6,13 +6,18 @@ PURPOSE:    The main Flask application file
 
 import os
 import sys
+import hashlib
 import logging
 import json
 import time
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from queue import Queue
 from flask import Flask, Response, render_template, request
+from flask.sessions import SecureCookieSessionInterface
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from werkzeug.middleware.proxy_fix import ProxyFix
 from timer_store import TimerStore
 from timers import timers_bp
 from flusher import Flusher
@@ -20,6 +25,7 @@ from elastic import Elastic
 from payload import Payload
 import webhook
 from clockbridgeconfig import Config
+from auth import auth_bp, enforce_auth_and_csrf, ensure_csrf_token
 
 file_path = os.environ.get('CLOCKBRIDGE_CONFIG_PATH')
 if not file_path:
@@ -51,6 +57,81 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s',
                     stream=sys.stderr)
 logger.setLevel(config.log_level)
 
+# ---- auth, session, CSRF, rate limiting --------------------------------
+
+access_token = getattr(config, "access_token", None)
+app.config["ACCESS_TOKEN"] = access_token
+
+if access_token:
+    # Derive the session signing key from the token: rotating the token
+    # automatically invalidates every session cookie previously issued.
+    app.config["SECRET_KEY"] = hashlib.sha256(access_token.encode()).digest()
+else:
+    # Random per-process key so sessions still work locally, but you get a
+    # loud warning that anyone hitting this instance can drive it.
+    app.config["SECRET_KEY"] = os.urandom(32)
+    logger.warning(
+        "access_token is not set in config (or CLOCKBRIDGE_ACCESS_TOKEN); "
+        "auth is DISABLED. Do NOT expose this instance to the internet."
+    )
+
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+# Sensible default: cookies get the Secure flag. The custom session interface
+# below overrides this per-request based on the actual URL scheme, which lets
+# the same instance serve HTTPS via the reverse proxy AND HTTP on the trusted
+# internal network -- browsers treat those as separate origins so each ends up
+# with an appropriately-flagged cookie.
+app.config["SESSION_COOKIE_SECURE"] = True
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
+
+
+class RequestAwareSessionInterface(SecureCookieSessionInterface):
+    """Flip the `Secure` cookie flag based on the current request's scheme
+    rather than a static config value. Combined with ProxyFix reading
+    X-Forwarded-Proto from a trusted reverse proxy, this lets one deployment
+    serve both HTTPS-through-proxy and direct HTTP on the LAN without either
+    breaking. Falls back to the config value when there's no request context
+    (e.g. during startup or a shell)."""
+
+    def get_cookie_secure(self, app):
+        try:
+            return request.is_secure
+        except RuntimeError:
+            return app.config.get("SESSION_COOKIE_SECURE", True)
+
+
+app.session_interface = RequestAwareSessionInterface()
+
+# If a reverse proxy sits in front, tell Flask to honour its X-Forwarded-Proto
+# (and X-Forwarded-For for accurate rate-limit keys). Only enable this when
+# you actually have a proxy in front: with it enabled and no proxy, an
+# attacker could set the header themselves. Your proxy MUST strip any
+# incoming X-Forwarded-* from clients and set its own -- nginx, Traefik, and
+# Caddy all do this by default; double-check if you're on something exotic.
+if os.environ.get("CLOCKBRIDGE_TRUST_PROXY") == "1":
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+
+app.register_blueprint(auth_bp)
+app.before_request(enforce_auth_and_csrf)
+
+@app.context_processor
+def _inject_csrf():
+    return {"csrf_token": ensure_csrf_token}
+
+# In-memory storage is per-process, so with `gunicorn -w N` each worker
+# has its own counter. Fine for a hobby app; point storage_uri at Redis
+# if you ever want globally-strict limits.
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["300 per minute"],
+    storage_uri="memory://",
+)
+# Applies to all endpoints in the auth blueprint (login GET/POST, logout).
+limiter.limit("10 per minute")(auth_bp)
+
+
 # Maps Clockify webhook event types to the generic action verbs understood by
 # Elastic.push(). Anything not listed here (NEW_TIME_ENTRY, TIMER_STOPPED, ...)
 # is treated as a create.
@@ -62,6 +143,17 @@ CLOCKIFY_ACTION_MAP = {
 @app.route("/ping", methods = ['GET'])
 def ping():
     return "Pong\n"
+
+@app.route("/robots.txt", methods=["GET"])
+def robots():
+    return Response("User-agent: *\nDisallow: /\n", mimetype="text/plain")
+
+@app.after_request
+def _no_robots(response):
+    # Belt-and-braces alongside robots.txt: signals every response as
+    # non-indexable to bots that read headers but ignore robots.txt.
+    response.headers["X-Robots-Tag"] = "noindex, nofollow, noarchive"
+    return response
 
 @app.route("/webhook/clockify", methods = ['POST'])
 def clockbridge():
