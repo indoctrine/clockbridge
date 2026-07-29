@@ -188,7 +188,7 @@ function prependRecent(entry) {
   const ul = $("recent-list");
   const li = document.createElement("li");
   li.textContent = summariseEntry(entry);
-  li.title = "Click to fill the form from this entry";
+  li.title = "Click to prefill form";
   li.addEventListener("click", () => fillFromEntry(entry));
   ul.insertBefore(li, ul.firstChild);
   state.recentOffset += 1;
@@ -261,7 +261,7 @@ async function loadRecent(reset = false) {
   for (const e of entries) {
     const li = document.createElement("li");
     li.textContent = summariseEntry(e);
-    li.title = "Click to fill the form from this entry";
+    li.title = "Click to prefill form";
     li.addEventListener("click", () => fillFromEntry(e));
     ul.appendChild(li);
   }
