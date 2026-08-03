@@ -3,7 +3,7 @@ import os
 import json
 from io import StringIO
 import yaml
-import pydantic_core
+from pydantic import AnyHttpUrl
 import pytest
 from clockbridgeconfig import Config
 sys.path.append(os.path.abspath('../'))
@@ -53,7 +53,7 @@ config:
         assert isinstance(self.config.event_types, list) or isinstance(self.config.event_types, str)
         assert isinstance(self.config.log_level, str) and self.config.log_level in ["DEBUG", "INFO", "WARN", "ERROR", "NOTSET"]
         assert isinstance(self.config.elastic_creds, dict)
-        assert isinstance(self.config.elastic_creds['url'], pydantic_core._pydantic_core.Url)
+        assert isinstance(self.config.elastic_creds['url'], AnyHttpUrl)
         assert isinstance(self.config.elastic_creds['insecure'], bool)
         assert isinstance(self.config.elastic_creds['username'], str)
         assert isinstance(self.config.elastic_creds['password'], bytes)

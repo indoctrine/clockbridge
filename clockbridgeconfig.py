@@ -6,7 +6,9 @@ PURPOSE:    This module handles loading and validating the configuration file fo
 
 import os
 import yaml
+from typing import Optional
 from typing_extensions import TypedDict, Literal
+import base64
 from pydantic import BaseModel, ValidationError, AnyHttpUrl, Base64Bytes, ValidationInfo, field_validator
 
 class ConfigCredsSchema(TypedDict):
@@ -30,6 +32,15 @@ class ConfigSchema(BaseModel):
     event_types: ( str | list[str] )
     elastic_creds: ConfigCredsSchema
     log_level: Literal["DEBUG", "INFO", "WARN", "ERROR"] = "NOTSET"
+    # Path to the SQLite file backing running timers and the pending_flush retry
+    # queue. Defaults to a file in the CWD for local dev; in K8s point this at a
+    # PVC-mounted path (and keep replicas=1 so there is one writer).
+    sqlite_path: str = "timers.db"
+    # Shared secret required for the web UI and non-webhook APIs. When unset,
+    # auth is disabled entirely (a warning is logged at startup). Overridable
+    # via CLOCKBRIDGE_ACCESS_TOKEN so K8s can inject it from Secrets without
+    # baking it into the yaml.
+    access_token: Optional[str] = None
 
 class Config():
     """Singleton config class where the magic happens"""
@@ -51,6 +62,17 @@ class Config():
     def __parse_config_file(self, config_file):
         try:
             config = yaml.safe_load(config_file)
+
+            # Add ability to include ES password over envvar
+            es_password = os.environ.get("ES_PASSWORD")
+            if es_password and "elastic_creds" in config:
+              config["elastic_creds"]["password"] = base64.b64encode(
+                    es_password.encode()
+                ).decode()
+
+            env_token = os.environ.get("CLOCKBRIDGE_ACCESS_TOKEN")
+            if env_token:
+                config["access_token"] = env_token
             schema = ConfigSchema
             validated_config = schema.model_validate(config)
 

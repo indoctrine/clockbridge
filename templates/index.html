@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>Clockbridge</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<main>
+  <header class="app-header">
+    <h1>Clockbridge</h1>
+    <form method="POST" action="{{ url_for('auth.logout') }}" class="logout-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="ghost">Log out</button>
+    </form>
+  </header>
+
+  <section id="running" hidden>
+    <h2>Timer running</h2>
+    <p id="running-summary"></p>
+    <p class="meta">Started at <span id="started-at"></span></p>
+    <p class="elapsed"><span id="elapsed">00:00:00</span></p>
+    <div class="row">
+      <button type="button" id="stop-btn">Stop</button>
+      <button type="button" id="cancel-btn" class="ghost">Cancel</button>
+    </div>
+  </section>
+
+  <section id="form-panel">
+    <div class="mode-switch" role="tablist" aria-label="Entry mode">
+      <button type="button" class="mode-option is-active" data-mode="timer" role="tab" aria-selected="true">Timer</button>
+      <button type="button" class="mode-option" data-mode="manual" role="tab" aria-selected="false">Manual entry</button>
+    </div>
+
+    <form id="entry-form" autocomplete="off">
+      <label>Hobby / Client
+        <input list="clients-list" id="client-input">
+        <datalist id="clients-list"></datalist>
+      </label>
+      <label>Project
+        <input list="projects-list" id="project-input">
+        <datalist id="projects-list"></datalist>
+      </label>
+      <label>Task
+        <input list="tasks-list" id="task-input">
+        <datalist id="tasks-list"></datalist>
+      </label>
+      <label>Description
+        <input type="text" id="description-input">
+      </label>
+      <label>Start
+        <input type="datetime-local" id="start-input" step="1">
+      </label>
+      <label class="manual-only">End
+        <input type="datetime-local" id="end-input" step="1">
+      </label>
+      <div class="row">
+        <button type="submit" id="submit-btn">Start timer</button>
+      </div>
+      <p id="form-error" class="error" hidden></p>
+    </form>
+  </section>
+
+  <section id="recent-panel">
+    <h2>Recent entries</h2>
+    <ul id="recent-list"></ul>
+    <div class="row">
+      <button type="button" id="load-more" class="ghost" hidden>Load more</button>
+    </div>
+  </section>
+</main>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
