@@ -13,7 +13,7 @@ import time
 import uuid
 from datetime import datetime, timedelta
 from queue import Queue
-from flask import Flask, Response, render_template, request
+from flask import Flask, Response, render_template, request, send_from_directory
 from flask.sessions import SecureCookieSessionInterface
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -224,6 +224,11 @@ def build_entry(body):
             "duration": int((end_dt - start_dt).total_seconds()),
         },
     }
+
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(app.root_path, 'static'),
+                               'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 @app.route("/api/entries", methods = ['POST'])
 def create_entry():
