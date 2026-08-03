@@ -54,9 +54,9 @@ def _is_local_path(path):
 # Endpoints and paths that bypass the auth+CSRF gate. 
 # Webhook implements its own signature verification checks.
 _EXEMPT_ENDPOINTS = frozenset({
-    "auth.login_form", "auth.login", "auth.logout", "static", "ping", "robots", "favicon.ico", "apple-touch-icon.png"
+    "auth.login_form", "auth.login", "auth.logout", "static", "ping", "robots" 
 })
-_EXEMPT_PATHS = frozenset({"/webhook/clockify"})
+_EXEMPT_PATHS = frozenset({"/webhook/clockify", "/favicon.ico", "/apple-touch-icon.png"})
 
 
 def enforce_auth_and_csrf():
