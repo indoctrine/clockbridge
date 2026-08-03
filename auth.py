@@ -51,10 +51,8 @@ def _is_local_path(path):
     # Guards against open-redirect via ?next=https://evil.example.com
     return isinstance(path, str) and path.startswith("/") and not path.startswith("//")
 
-
-# Endpoints and paths that bypass the auth+CSRF gate. Webhook has its own
-# HMAC signature check; login/logout obviously can't require prior auth;
-# static files and ping are harmless.
+# Endpoints and paths that bypass the auth+CSRF gate. 
+# Webhook implements its own signature verification checks.
 _EXEMPT_ENDPOINTS = frozenset({
     "auth.login_form", "auth.login", "auth.logout", "static", "ping", "robots",
 })
@@ -83,7 +81,9 @@ def enforce_auth_and_csrf():
         expected = session.get("csrf_token", "")
         if (not submitted or not expected
                 or not hmac.compare_digest(submitted, expected)):
-            return Response("CSRF token missing or invalid", 403)
+            logger.info("CSRF check failed for %s %s from %s",
+                        request.method, request.path, request.remote_addr)
+            return Response("Forbidden", 403)
     return None
 
 
@@ -106,7 +106,8 @@ def login():
     ensure_csrf_token()
     submitted_csrf = request.form.get("csrf_token", "")
     if not hmac.compare_digest(submitted_csrf, session.get("csrf_token", "")):
-        return Response("CSRF token missing or invalid", 403)
+        logger.info("CSRF check failed on login from %s", request.remote_addr)
+        return Response("Forbidden", 403)
 
     submitted = request.form.get("password", "")
     if not hmac.compare_digest(submitted, expected):

@@ -75,13 +75,11 @@ else:
         "auth is DISABLED. Do NOT expose this instance to the internet."
     )
 
+# Application is proxy-aware and cookies will have Same-Site: Secure flag when 
+# accessed via the reverse proxy (i.e. externally from the internet) with Lax 
+# used when accessed internally (no https).
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
-# Sensible default: cookies get the Secure flag. The custom session interface
-# below overrides this per-request based on the actual URL scheme, which lets
-# the same instance serve HTTPS via the reverse proxy AND HTTP on the trusted
-# internal network -- browsers treat those as separate origins so each ends up
-# with an appropriately-flagged cookie.
 app.config["SESSION_COOKIE_SECURE"] = True
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
 
@@ -107,7 +105,7 @@ app.session_interface = RequestAwareSessionInterface()
 # (and X-Forwarded-For for accurate rate-limit keys). Only enable this when
 # you actually have a proxy in front: with it enabled and no proxy, an
 # attacker could set the header themselves. Your proxy MUST strip any
-# incoming X-Forwarded-* from clients and set its own -- nginx, Traefik, and
+# incoming X-Forwarded-* from clients and set its own - nginx, Traefik, and
 # Caddy all do this by default; double-check if you're on something exotic.
 if os.environ.get("CLOCKBRIDGE_TRUST_PROXY") == "1":
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
@@ -119,9 +117,6 @@ app.before_request(enforce_auth_and_csrf)
 def _inject_csrf():
     return {"csrf_token": ensure_csrf_token}
 
-# In-memory storage is per-process, so with `gunicorn -w N` each worker
-# has its own counter. Fine for a hobby app; point storage_uri at Redis
-# if you ever want globally-strict limits.
 limiter = Limiter(
     get_remote_address,
     app=app,
@@ -150,8 +145,6 @@ def robots():
 
 @app.after_request
 def _no_robots(response):
-    # Belt-and-braces alongside robots.txt: signals every response as
-    # non-indexable to bots that read headers but ignore robots.txt.
     response.headers["X-Robots-Tag"] = "noindex, nofollow, noarchive"
     return response
 
@@ -192,7 +185,7 @@ def clockbridge():
         return Response(503)
 
 def build_entry(body):
-    """Build a canonical, Clockify-shaped entry dict from frontend input.
+    """Build an entry dict from frontend input.
 
     Used by non-Clockify entries. Creates a custom document id and computes 
     duration server-side from start/end with client-supplied duration being ignored. 
@@ -236,10 +229,6 @@ def build_entry(body):
 def create_entry():
     """Create a completed time entry from the frontend (manual entry / timer stop).
 
-    Unlike /webhook/clockify, this endpoint is authenticated upstream (session
-    or ingress), so it does not verify a Clockify signature -- it is a trusted
-    internal producer. It mints its own document id, validates against the same
-    schema as the webhook via Payload, then pushes through the shared es.push().
     On an Elasticsearch failure it returns an error so the caller can retry,
     rather than enqueuing onto the per-worker webhook queue.
     """
@@ -252,9 +241,6 @@ def create_entry():
         payload = Payload(json.dumps(entry))
         payload.validate_schema()
         validated = dict(payload.data)
-    # Payload raises ValueError on a bad schema; the duration-mismatch guard
-    # surfaces as TypeError. We construct duration ourselves so the latter is
-    # effectively unreachable, but we catch it defensively.
     except (ValueError, TypeError) as exc:
         logger.info("Rejected manual entry: %s", exc)
         return Response(f"Invalid entry: {exc}", 400)
