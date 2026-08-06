@@ -169,16 +169,52 @@ function summariseEntry(e) {
   return meta.length ? `${desc} — ${meta.join(" · ")}` : desc;
 }
 
+function fmtDuration(ms) {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  if (h && m) return `${h}h ${m}m`;
+  if (h) return `${h}h`;
+  if (m) return `${m}m`;
+  return `${s}s`;
+}
+
+function formatEntryInfo(e) {
+  const start = e.timeInterval?.start;
+  if (!start) return "";
+  const startDate = new Date(start);
+  if (isNaN(startDate)) return "";
+  const dateStr = startDate.toLocaleString(undefined, {
+    month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+  });
+  const end = e.timeInterval?.end;
+  if (!end) return dateStr;
+  const endDate = new Date(end);
+  if (isNaN(endDate)) return dateStr;
+  return `${dateStr} · ${fmtDuration(endDate - startDate)}`;
+}
+
 function renderEntryInto(node, e) {
   // DOM version used for recent-entry list items so we can bold the
-  // description without HTML-escaping the metadata by hand.
+  // description and add a smaller meta subline without hand-rolling escapes.
   node.textContent = "";
+
+  const main = document.createElement("div");
   const strong = document.createElement("strong");
   strong.textContent = e.description || "(no description)";
-  node.appendChild(strong);
+  main.appendChild(strong);
   const meta = [e.project?.clientName, e.project?.name, e.task?.name].filter(Boolean);
   if (meta.length) {
-    node.appendChild(document.createTextNode(` — ${meta.join(" · ")}`));
+    main.appendChild(document.createTextNode(` — ${meta.join(" · ")}`));
+  }
+  node.appendChild(main);
+
+  const info = formatEntryInfo(e);
+  if (info) {
+    const sub = document.createElement("div");
+    sub.className = "entry-meta";
+    sub.textContent = info;
+    node.appendChild(sub);
   }
 }
 
