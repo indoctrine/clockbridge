@@ -1,13 +1,18 @@
+stages:
+  - build
+  - test
+  - deploy
+  - release
+
 variables:
   DOCKER_HOST: tcp://$CI_DEPLOY_SERVER:2375/
   DOCKER_TLS_CERTDIR: ""
-  DOCKER_IMAGE_NAME: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+  # Tag image with commit SHA ref
+  DOCKER_IMAGE_SHA: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+  DOCKER_IMAGE_BRANCH: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
   CLOCKBRIDGE_CONFIG_DIR: /docker-data/clockbridge
-  # Enable full output in job log
   FF_SCRIPT_SECTIONS: 1
 
-
-# Ensure docker is working on the Gitlab runner
 default:
   before_script:
     - docker info
@@ -21,31 +26,47 @@ docker-build:
   before_script:
     - docker login -u $CI_REGISTRY_USER -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
   script:
-    - docker build --pull -t "$DOCKER_IMAGE_NAME" .
-    - docker push "$DOCKER_IMAGE_NAME"
+    # Always build and push the SHA-tagged image
+    - docker build --pull -t "$DOCKER_IMAGE_SHA" .
+    - docker push "$DOCKER_IMAGE_SHA"
+    # Also publish the branch-slug tag
     - >
-      if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
-        docker tag "$DOCKER_IMAGE_NAME" "$CI_REGISTRY_IMAGE:latest"
-        docker push "$CI_REGISTRY_IMAGE:latest"
+      if [[ -z "$CI_COMMIT_TAG" ]]; then
+        docker tag "$DOCKER_IMAGE_SHA" "$DOCKER_IMAGE_BRANCH"
+        docker push "$DOCKER_IMAGE_BRANCH"
+      fi
+    # Tag pipelines: publish version and move latest tag
+    # Major version tags (i.e. v1.2 points to the latest version of v1.2.x)
+    - >
+      if [[ -n "$CI_COMMIT_TAG" ]]; then
+        VERSION="${CI_COMMIT_TAG#v}"
+        MAJOR="${VERSION%%.*}"
+        MINOR="${VERSION%.*}"
+        for T in "$VERSION" "$MINOR" "$MAJOR" latest; do
+          docker tag "$DOCKER_IMAGE_SHA" "$CI_REGISTRY_IMAGE:$T"
+          docker push "$CI_REGISTRY_IMAGE:$T"
+        done
       fi
   rules:
+    # Run only if committed to versioned tag or branch
+    - if: $CI_COMMIT_TAG =~ /^v?\d+\.\d+\.\d+$/
+      exists: [Dockerfile]
     - if: $CI_COMMIT_BRANCH
-      exists:
-        - Dockerfile
+      exists: [Dockerfile]
 
 test-code:
-    stage: test
-    image: python:3.12
-    cache:
-      paths:
-        - .cache/pip
-    before_script:
-        - python3 -m pip install pytest
-        - python3 -m pip install -r requirements.txt
-        - export PYTHONPATH=$(pwd)
-        - export CLOCKBRIDGE_CONFIG_PATH=tests/testConfig.yaml
-    script:
-        - pytest --junitxml tests/results.xml tests/
+  stage: test
+  image: python:3.12
+  cache:
+    paths:
+      - .cache/pip
+  before_script:
+    - python3 -m pip install pytest
+    - python3 -m pip install -r requirements.txt
+    - export PYTHONPATH=$(pwd)
+    - export CLOCKBRIDGE_CONFIG_PATH=tests/testConfig.yaml
+  script:
+    - pytest --junitxml tests/results.xml tests/
 
 deploy-dev:
   stage: deploy
@@ -53,61 +74,53 @@ deploy-dev:
   image: docker:stable
   services:
     - name: docker:stable-dind
-  needs:
-   - docker-build
-   - test-code
+  needs: [docker-build, test-code]
+  rules:
+    - if: $CI_COMMIT_BRANCH
   before_script:
-    - apk update 
-    - apk add curl
+    - apk update && apk add curl
   script:
-    - >
-      if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
-        docker pull $CI_REGISTRY_IMAGE:latest
-        docker rm -f clockbridge || true
-        docker run -d -p 5000:5000 -v /docker-data/clockbridge:/config --restart always --name clockbridge $CI_REGISTRY_IMAGE:latest
-      else
-        docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
-        docker rm -f clockbridge || true
-        docker run -d -p 5000:5000 -v /docker-data/clockbridge:/config --restart always --name clockbridge $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
-      fi
-    - sleep 3 # Give the container time to initialise
-    - >
-      [ "$( curl -q ${CI_DEPLOY_SERVER}:5000/ping )" = "Pong" ]
+    # Deploy the commit tagged image we just created
+    - docker pull "$DOCKER_IMAGE_SHA"
+    - docker rm -f clockbridge || true
+    - docker run -d -p 5000:5000 -v /docker-data/clockbridge:/config --restart always --name clockbridge "$DOCKER_IMAGE_SHA"
+    - sleep 3
+    - '[ "$(curl -q ${CI_DEPLOY_SERVER}:5000/ping)" = "Pong" ]'
   after_script:
     - docker rmi $(docker images -f dangling=true -f reference=$CI_REGISTRY_IMAGE -q)
-  tags:
-    - deploy
+  tags: [deploy]
 
 deploy-prod:
   stage: deploy
   environment: production
-  allow_failure: false
   image: docker:stable
   services:
     - name: docker:stable-dind
-  when: manual
   rules:
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-  needs: 
-    - deploy-dev
+    - if: $CI_COMMIT_TAG =~ /^v?\d+\.\d+\.\d+$/
+  needs: [docker-build, test-code]
   before_script:
-    - apk update 
-    - apk add curl
+    - apk update && apk add curl
   script:
-    - >
-      if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
-        docker pull $CI_REGISTRY_IMAGE:latest
-        docker rm -f clockbridge || true
-        docker run -d -p 5000:5000 -v $CLOCKBRIDGE_CONFIG_DIR:/config --restart always --name clockbridge $CI_REGISTRY_IMAGE:latest
-      else
-        docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
-        docker rm -f clockbridge || true
-        docker run -d -p 5000:5000 -v $CLOCKBRIDGE_CONFIG_DIR:/config --restart always --name clockbridge $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
-      fi
-    - sleep 3 # Give the container time to initialise
-    - >
-      [ "$( curl -q ${CI_DEPLOY_SERVER}:5000/ping )" = "Pong" ]
+    # Trim the leading v from Git tag
+    - VERSION="${CI_COMMIT_TAG#v}"
+    - docker pull "$CI_REGISTRY_IMAGE:$VERSION"
+    - docker rm -f clockbridge || true
+    - docker run -d -p 5000:5000 -v $CLOCKBRIDGE_CONFIG_DIR:/config --restart always --name clockbridge "$CI_REGISTRY_IMAGE:$VERSION"
+    - sleep 3
+    - '[ "$(curl -q ${CI_DEPLOY_SERVER}:5000/ping)" = "Pong" ]'
   after_script:
     - docker rmi $(docker images -f dangling=true -f reference=$CI_REGISTRY_IMAGE -q)
-  tags:
-    - deploy
+  tags: [deploy]
+
+release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v?\d+\.\d+\.\d+$/
+  needs: [deploy-prod]
+  script:
+    - echo "Publishing release for $CI_COMMIT_TAG"
+  release:
+    tag_name: $CI_COMMIT_TAG
+    description: $CI_COMMIT_TAG_MESSAGE
