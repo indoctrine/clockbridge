@@ -13,10 +13,6 @@ variables:
   CLOCKBRIDGE_CONFIG_DIR: /docker-data/clockbridge
   FF_SCRIPT_SECTIONS: 1
 
-default:
-  before_script:
-    - docker info
-
 docker-build:
   stage: build
   environment: development
@@ -24,6 +20,8 @@ docker-build:
   services:
     - name: docker:stable-dind
   before_script:
+    # Ensure docker is running before proceeding
+    - docker info
     - docker login -u $CI_REGISTRY_USER -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
   script:
     # Always build and push the SHA-tagged image
@@ -78,6 +76,7 @@ deploy-dev:
   rules:
     - if: $CI_COMMIT_BRANCH
   before_script:
+    - docker info
     - apk update && apk add curl
   script:
     # Deploy the commit tagged image we just created
@@ -100,6 +99,7 @@ deploy-prod:
     - if: $CI_COMMIT_TAG =~ /^v?\d+\.\d+\.\d+$/
   needs: [docker-build, test-code]
   before_script:
+    - docker info
     - apk update && apk add curl
   script:
     # Trim the leading v from Git tag
@@ -116,8 +116,6 @@ deploy-prod:
 release:
   stage: release
   image: registry.gitlab.com/gitlab-org/release-cli:latest
-  # Override Docker before_script on release
-  before_script: []
   rules:
     - if: $CI_COMMIT_TAG =~ /^v?\d+\.\d+\.\d+$/
   needs: [deploy-prod]
