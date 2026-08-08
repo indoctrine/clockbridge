@@ -174,6 +174,18 @@ class Elastic:
                                     .get("tasks", {}).get("buckets", [])
         return [{"name": b["key"]} for b in buckets]
 
+    def delete_entry(self, entry_id):
+        """Delete an entry by id across all monthly indices."""
+        body = {"query": {"term": {"_id": entry_id}}}
+        r = requests.post(f"{self.base_url}{self.index_prefix}-*/_delete_by_query?refresh=true",
+                          data=json.dumps(body),
+                          auth=(self.user, self.pwd),
+                          verify=not self.insecure,
+                          headers={"Content-Type": "application/json"},
+                          timeout=10)
+        r.raise_for_status()
+        return r.json().get("deleted", 0) > 0
+
     def update_doc(self, data):
         """
         Update document in Elastic by deleting the document and recreating it 

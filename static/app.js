@@ -199,6 +199,9 @@ function renderEntryInto(node, e) {
   // description and add a smaller meta subline without hand-rolling escapes.
   node.textContent = "";
 
+  const content = document.createElement("div");
+  content.className = "entry-content";
+
   const main = document.createElement("div");
   const strong = document.createElement("strong");
   strong.textContent = e.description || "(no description)";
@@ -207,14 +210,36 @@ function renderEntryInto(node, e) {
   if (meta.length) {
     main.appendChild(document.createTextNode(` — ${meta.join(" · ")}`));
   }
-  node.appendChild(main);
+  content.appendChild(main);
 
   const info = formatEntryInfo(e);
   if (info) {
     const sub = document.createElement("div");
     sub.className = "entry-meta";
     sub.textContent = info;
-    node.appendChild(sub);
+    content.appendChild(sub);
+  }
+  node.appendChild(content);
+
+  if (e.id) {
+    const del = document.createElement("button");
+    del.type = "button";
+    del.className = "entry-delete";
+    del.title = "Delete this entry";
+    del.setAttribute("aria-label", "Delete entry");
+    del.textContent = "×";
+    del.addEventListener("click", async (ev) => {
+      ev.stopPropagation();
+      if (!confirm("Delete this entry?")) return;
+      try {
+        await api(`/api/entries/${encodeURIComponent(e.id)}`, { method: "DELETE" });
+        node.remove();
+        invalidateLookupCache();
+      } catch (ex) {
+        alert(`Failed to delete: ${ex.message}`);
+      }
+    });
+    node.appendChild(del);
   }
 }
 

@@ -80,3 +80,21 @@ class TestRecentEntriesRoute:
         es_mock.recent_entries.side_effect = RuntimeError("boom")
         res = client.get("/api/entries/recent")
         assert res.status_code == 503
+
+
+class TestDeleteEntryRoute:
+    def test_delete_success(self, client, es_mock):
+        es_mock.delete_entry.return_value = True
+        r = client.delete("/api/entries/abc123")
+        assert r.status_code == 200
+        es_mock.delete_entry.assert_called_once_with("abc123")
+
+    def test_delete_missing_returns_404(self, client, es_mock):
+        es_mock.delete_entry.return_value = False
+        r = client.delete("/api/entries/nope")
+        assert r.status_code == 404
+
+    def test_delete_returns_503_when_es_raises(self, client, es_mock):
+        es_mock.delete_entry.side_effect = RuntimeError("boom")
+        r = client.delete("/api/entries/abc123")
+        assert r.status_code == 503

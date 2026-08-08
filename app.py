@@ -316,5 +316,15 @@ def list_recent_entries():
         logger.exception("Failed listing recent entries")
         return Response("Elasticsearch unavailable", 503)
 
+@app.route("/api/entries/<entry_id>", methods=["DELETE"])
+def delete_entry(entry_id):
+    try:
+        if es.delete_entry(entry_id):
+            return _json_response({"deleted": True})
+        return Response("Not found", 404)
+    except Exception:
+        logger.exception("Failed deleting entry %s", entry_id)
+        return Response("Elasticsearch unavailable", 503)
+
 if __name__ == "__main__":
     app.run(debug=True, port=5000, host='0.0.0.0')

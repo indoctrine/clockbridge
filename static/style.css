@@ -3,7 +3,8 @@
   --panel: #171a21;
   --text: #e8ebf0;
   --muted: #8b93a3;
-  --accent: #5b8def;
+  --accent: #7fff00;
+  --button-text: #1a2e05;
   --border: #262b36;
   --error: #ff6b6b;
 }
@@ -61,7 +62,7 @@ section {
 }
 .mode-option.is-active {
   background: var(--accent);
-  color: white;
+  color: var(--button-text);
 }
 .mode-option:not(.is-active):hover { color: var(--text); }
 form { display: flex; flex-direction: column; gap: 0.75rem; }
@@ -78,7 +79,7 @@ input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 .row { display: flex; gap: 0.5rem; }
 button {
   background: var(--accent);
-  color: white;
+  color: var(--button-text);
   border: 0;
   border-radius: 6px;
   padding: 0.55rem 1rem;
@@ -104,6 +105,21 @@ button:hover { filter: brightness(1.1); }
   border-radius: 6px;
   cursor: pointer;
   border: 1px solid transparent;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
 }
 #recent-list li:hover { background: var(--bg); border-color: var(--border); }
+.entry-content { flex: 1; min-width: 0; }
 .entry-meta { font-size: 0.8rem; color: var(--muted); margin-top: 0.15rem; }
+.entry-delete {
+  background: transparent;
+  color: var(--muted);
+  border: 0;
+  padding: 0 0.4rem;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.entry-delete:hover { color: var(--error); background: var(--bg); }
