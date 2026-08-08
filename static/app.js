@@ -185,7 +185,7 @@ function formatEntryInfo(e) {
   const startDate = new Date(start);
   if (isNaN(startDate)) return "";
   const dateStr = startDate.toLocaleString(undefined, {
-    month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+      weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit"
   });
   const end = e.timeInterval?.end;
   if (!end) return dateStr;
@@ -423,8 +423,7 @@ async function onProjectChange() {
   const projectName = $("project-input").value.trim();
   const taskName = $("task-input").value.trim();
   // Clear task if we've moved to a different project. It might be legitimate
-  // (same task name reused across projects) but that's a re-type, not silent
-  // carry-over of nonsense.
+  // (same task name reused across projects) but that should be re-typed
   if (taskName) $("task-input").value = "";
   await loadTasks();
 }
