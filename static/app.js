@@ -95,15 +95,15 @@ async function loadProjects() {
 async function loadTasks() {
   const projectName = $("project-input").value.trim();
   const project = state.projects.find((p) => p.name === projectName);
-  if (projectName && !project) {
+  if (!project) {
+    // No project selected (or a brand-new one) — no task suggestions to offer
     state.tasks = [];
   } else {
-    const key = project ? project.projectId : "__all__";
-    if (!cache.tasks.has(key)) {
-      const qs = project ? `?project=${encodeURIComponent(project.projectId)}` : "";
-      cache.tasks.set(key, await api(`/api/tasks${qs}`).catch(() => []));
+    if (!cache.tasks.has(project.projectId)) {
+      const qs = `?project=${encodeURIComponent(project.projectId)}`;
+      cache.tasks.set(project.projectId, await api(`/api/tasks${qs}`).catch(() => []));
     }
-    state.tasks = cache.tasks.get(key);
+    state.tasks = cache.tasks.get(project.projectId);
   }
   fillDatalist("tasks-list", state.tasks, (t) => t.name);
 }
@@ -446,7 +446,7 @@ function wireEvents() {
 async function init() {
   wireEvents();
   applyMode();
-  await Promise.all([loadClients(), loadProjects(), loadTasks(), refreshRunning(), loadRecent(true)]);
+  await Promise.all([loadClients(), loadProjects(), refreshRunning(), loadRecent(true)]);
 }
 
 init();
